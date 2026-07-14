@@ -23,6 +23,7 @@ import {
   HiUserGroup,
   HiXMark,
 } from "react-icons/hi2";
+import GraphsPanel from "../../components/dashboard/GraphsPanel";
 import Maps, {
   type MapBaseLayer,
   type MapViewMode,
@@ -195,11 +196,16 @@ const RegionDashboard = () => {
       ? window.matchMedia("(min-width: 1024px)").matches
       : false,
   );
-  const [mobileSheet, setMobileSheet] = useState<"stats" | "feed" | "ai" | null>(
-    null,
-  );
+  const [mobileSheet, setMobileSheet] = useState<
+    "stats" | "feed" | "ai" | "graphs" | null
+  >(null);
   const [baseLayer, setBaseLayer] = useState<MapBaseLayer>("satellite");
   const [viewMode, setViewMode] = useState<MapViewMode>("2d");
+  const [graphsExpanded, setGraphsExpanded] = useState(() =>
+    typeof window !== "undefined"
+      ? window.matchMedia("(min-width: 1024px)").matches
+      : true,
+  );
   const [insightIndex, setInsightIndex] = useState(0);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const [locateLoading, setLocateLoading] = useState(false);
@@ -256,7 +262,7 @@ const RegionDashboard = () => {
     statusFilter !== "all" ||
     search.trim().length > 0;
 
-  const toggleMobileSheet = (sheet: "stats" | "feed" | "ai") => {
+  const toggleMobileSheet = (sheet: "stats" | "feed" | "ai" | "graphs") => {
     setMobileSheet((current) => (current === sheet ? null : sheet));
   };
 
@@ -415,6 +421,27 @@ const RegionDashboard = () => {
             </button>
             <button
               type="button"
+              onClick={() => {
+                setGraphsExpanded((open) => !open);
+                if (typeof window !== "undefined" && window.innerWidth < 1024) {
+                  setMobileSheet((sheet) =>
+                    sheet === "graphs" ? null : "graphs",
+                  );
+                }
+              }}
+              className={[
+                "inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold backdrop-blur-md transition",
+                graphsExpanded || mobileSheet === "graphs"
+                  ? "border-teal-400/50 bg-teal-500/20 text-teal-100 shadow-[0_0_18px_rgba(45,212,191,0.22)]"
+                  : "border-slate-600/60 bg-slate-900/90 text-slate-200 hover:border-teal-500/40",
+              ].join(" ")}
+              aria-pressed={graphsExpanded || mobileSheet === "graphs"}
+            >
+              <HiChartBar className="h-4 w-4" aria-hidden />
+              Graphs
+            </button>
+            <button
+              type="button"
               onClick={() => setInsightIndex((i) => (i + 1) % AI_INSIGHTS.length)}
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-violet-500/30 bg-slate-900/90 px-3 py-2 text-sm font-semibold text-violet-100 backdrop-blur-md"
             >
@@ -455,13 +482,13 @@ const RegionDashboard = () => {
       </header>
 
       <div className="pointer-events-auto absolute inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-25 flex justify-center gap-2 px-3 lg:hidden">
-        {(["stats", "feed", "ai"] as const).map((sheet) => (
+        {(["stats", "graphs", "feed", "ai"] as const).map((sheet) => (
           <button
             key={sheet}
             type="button"
             onClick={() => toggleMobileSheet(sheet)}
             className={[
-              "rounded-full border px-4 py-2 text-xs font-bold shadow-lg backdrop-blur-md transition capitalize",
+              "rounded-full border px-3 py-2 text-xs font-bold shadow-lg backdrop-blur-md transition capitalize",
               mobileSheet === sheet
                 ? "border-cyan-400/60 bg-cyan-500/25 text-cyan-100"
                 : "border-slate-700/80 bg-slate-900/90 text-slate-300",
@@ -484,7 +511,7 @@ const RegionDashboard = () => {
       <div
         className={[
           "pointer-events-none absolute inset-x-0 z-20 flex flex-col gap-3 p-3 sm:p-5",
-          "bottom-[calc(7rem+env(safe-area-inset-bottom))] lg:bottom-0 lg:flex-row lg:items-end lg:justify-between",
+          "bottom-[calc(7rem+env(safe-area-inset-bottom))] lg:bottom-0 lg:flex-row lg:items-end lg:justify-between lg:gap-3",
         ].join(" ")}
       >
         <div
@@ -609,6 +636,25 @@ const RegionDashboard = () => {
             </button>
           ) : null}
         </div>
+
+        <GraphsPanel
+          projects={filteredProjects}
+          expanded={graphsExpanded || mobileSheet === "graphs"}
+          onToggleExpand={() => setGraphsExpanded((v) => !v)}
+          statusFilter={statusFilter}
+          provinceFilter={provinceFilter}
+          programFilter={programFilter}
+          onStatusFilter={setStatusFilter}
+          onProvinceFilter={setProvinceFilter}
+          onProgramFilter={setProgramFilter}
+          className={[
+            mobileSheet === "graphs" ? "max-h-[min(58vh,480px)]" : "hidden",
+            "lg:flex",
+            graphsExpanded
+              ? "lg:max-h-[min(520px,62vh)] lg:max-w-[min(340px,calc(100%-2rem))]"
+              : "lg:max-h-14 lg:max-w-[min(240px,calc(100%-2rem))]",
+          ].join(" ")}
+        />
 
         <div
           className={[
