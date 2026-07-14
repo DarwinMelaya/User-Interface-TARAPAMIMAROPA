@@ -198,7 +198,7 @@ const RegionDashboard = () => {
   const [mobileSheet, setMobileSheet] = useState<"stats" | "feed" | "ai" | null>(
     null,
   );
-  const [baseLayer, setBaseLayer] = useState<MapBaseLayer>("street");
+  const [baseLayer, setBaseLayer] = useState<MapBaseLayer>("satellite");
   const [viewMode, setViewMode] = useState<MapViewMode>("2d");
   const [insightIndex, setInsightIndex] = useState(0);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
