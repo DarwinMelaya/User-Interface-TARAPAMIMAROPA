@@ -230,18 +230,31 @@
   box-shadow: 0 0 14px rgba(14, 165, 233, 0.8);
 }
 
-.project-map-container.maplibre-3d .maplibregl-map {
+.project-map-container.maplibre-3d {
+  background:
+    radial-gradient(ellipse at 50% 18%, #0c4a6e 0%, transparent 55%),
+    linear-gradient(180deg, #020617 0%, #0f172a 48%, #020617 100%);
+}
+
+.project-map-container.maplibre-3d .maplibregl-map,
+.project-map-container.maplibre-3d .maplibregl-canvas {
   font-family: inherit;
+  background: transparent;
 }
 
 .project-map-container.maplibre-3d .maplibregl-ctrl-group {
   background: rgba(2, 6, 23, 0.9);
   border: 1px solid rgba(34, 211, 238, 0.25);
   overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
 .project-map-container.maplibre-3d .maplibregl-ctrl button {
   filter: invert(1) hue-rotate(180deg);
+}
+
+.project-map-container.maplibre-3d .maplibregl-ctrl-group + .maplibregl-ctrl-group {
+  margin-top: 8px;
 }
 
 .maplibregl-popup.project-maplibre-popup .maplibregl-popup-content {

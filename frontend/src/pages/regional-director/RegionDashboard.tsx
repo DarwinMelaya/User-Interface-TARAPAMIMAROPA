@@ -314,8 +314,17 @@ const RegionDashboard = () => {
         />
       </div>
 
-      <div className="pointer-events-none absolute inset-0 z-10 bg-[radial-gradient(circle_at_20%_0%,rgba(34,211,238,0.12),transparent_45%),radial-gradient(circle_at_80%_100%,rgba(37,99,235,0.12),transparent_42%),linear-gradient(to_bottom,rgba(2,6,23,0.08),rgba(2,6,23,0.55))]" />
-      <div className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(rgba(34,211,238,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.03)_1px,transparent_1px)] bg-[size:40px_40px]" />
+      <div
+        className={[
+          "pointer-events-none absolute inset-0 z-10",
+          viewMode === "3d"
+            ? "bg-[radial-gradient(circle_at_20%_0%,rgba(34,211,238,0.06),transparent_42%),linear-gradient(to_bottom,rgba(2,6,23,0.02),rgba(2,6,23,0.28))]"
+            : "bg-[radial-gradient(circle_at_20%_0%,rgba(34,211,238,0.12),transparent_45%),radial-gradient(circle_at_80%_100%,rgba(37,99,235,0.12),transparent_42%),linear-gradient(to_bottom,rgba(2,6,23,0.08),rgba(2,6,23,0.55))]",
+        ].join(" ")}
+      />
+      {viewMode !== "3d" && (
+        <div className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(rgba(34,211,238,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.03)_1px,transparent_1px)] bg-[size:40px_40px]" />
+      )}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-32 bg-gradient-to-b from-slate-950/95 via-slate-950/45 to-transparent" />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-44 bg-gradient-to-t from-slate-950/95 via-slate-950/45 to-transparent" />
 
@@ -372,9 +381,15 @@ const RegionDashboard = () => {
             </div>
             <button
               type="button"
-              onClick={() =>
-                setViewMode((mode) => (mode === "2d" ? "3d" : "2d"))
-              }
+              onClick={() => {
+                setViewMode((mode) => {
+                  const next = mode === "2d" ? "3d" : "2d";
+                  if (next === "3d" && (baseLayer === "street" || baseLayer === "terrain")) {
+                    setBaseLayer("satellite");
+                  }
+                  return next;
+                });
+              }}
               className={[
                 "inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold backdrop-blur-md transition",
                 viewMode === "3d"
