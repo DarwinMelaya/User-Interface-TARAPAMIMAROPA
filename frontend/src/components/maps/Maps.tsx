@@ -8,11 +8,13 @@ import {
   type TaraProject,
 } from "../../constants/taraProjects";
 import { buildProjectPinHtml } from "./projectMapPins";
+import Maps3D from "./Maps3D";
+import type { MapBaseLayer, MapViewMode, UserLocation } from "./mapTypes";
+
+export type { MapBaseLayer, MapViewMode, UserLocation };
 
 const MIMAROPA_CENTER: L.LatLngExpression = [12.0, 121.0];
 const DEFAULT_ZOOM = 7;
-
-export type MapBaseLayer = "street" | "satellite" | "terrain" | "hybrid";
 
 const BASE_LAYERS: Record<
   MapBaseLayer,
@@ -142,16 +144,11 @@ const resetMarkerElevation = (marker: L.Marker) => {
   marker.setZIndexOffset?.(0);
 };
 
-export type UserLocation = {
-  lat: number;
-  lng: number;
-  accuracy?: number;
-};
-
 type MapsProps = {
   projects: TaraProject[];
   selectedId?: string | null;
   baseLayer?: MapBaseLayer;
+  viewMode?: MapViewMode;
   userLocation?: UserLocation | null;
   flyToUserToken?: number;
   onViewProject?: (project: TaraProject) => void;
@@ -170,14 +167,14 @@ const createUserLocationIcon = () =>
     iconAnchor: [14, 14],
   });
 
-const Maps = ({
+const Maps2D = ({
   projects,
   selectedId,
   baseLayer = "street",
   userLocation = null,
   flyToUserToken = 0,
   onViewProject,
-}: MapsProps) => {
+}: Omit<MapsProps, "viewMode">) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
   const tileRef = useRef<L.TileLayer | null>(null);
@@ -360,6 +357,13 @@ const Maps = ({
       aria-label="TARA PAMIMAROPA GIS project map"
     />
   );
+};
+
+const Maps = ({ viewMode = "2d", ...props }: MapsProps) => {
+  if (viewMode === "3d") {
+    return <Maps3D {...props} />;
+  }
+  return <Maps2D {...props} />;
 };
 
 export default Maps;

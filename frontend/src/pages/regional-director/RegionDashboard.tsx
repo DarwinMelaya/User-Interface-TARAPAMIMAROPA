@@ -14,6 +14,7 @@ import {
   HiMagnifyingGlass,
   HiMap,
   HiMapPin,
+  HiCube,
   HiPaperAirplane,
   HiPauseCircle,
   HiSignal,
@@ -24,6 +25,7 @@ import {
 } from "react-icons/hi2";
 import Maps, {
   type MapBaseLayer,
+  type MapViewMode,
   type UserLocation,
 } from "../../components/maps/Maps";
 import {
@@ -197,6 +199,7 @@ const RegionDashboard = () => {
     null,
   );
   const [baseLayer, setBaseLayer] = useState<MapBaseLayer>("street");
+  const [viewMode, setViewMode] = useState<MapViewMode>("2d");
   const [insightIndex, setInsightIndex] = useState(0);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const [locateLoading, setLocateLoading] = useState(false);
@@ -304,6 +307,7 @@ const RegionDashboard = () => {
           projects={filteredProjects}
           selectedId={selectedId}
           baseLayer={baseLayer}
+          viewMode={viewMode}
           userLocation={userLocation}
           flyToUserToken={flyToUserToken}
           onViewProject={handleViewProject}
@@ -366,6 +370,22 @@ const RegionDashboard = () => {
                 </button>
               ))}
             </div>
+            <button
+              type="button"
+              onClick={() =>
+                setViewMode((mode) => (mode === "2d" ? "3d" : "2d"))
+              }
+              className={[
+                "inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold backdrop-blur-md transition",
+                viewMode === "3d"
+                  ? "border-fuchsia-400/50 bg-fuchsia-500/20 text-fuchsia-100 shadow-[0_0_18px_rgba(217,70,239,0.25)]"
+                  : "border-slate-600/60 bg-slate-900/90 text-slate-200 hover:border-fuchsia-500/40",
+              ].join(" ")}
+              aria-pressed={viewMode === "3d"}
+            >
+              <HiCube className="h-4 w-4" aria-hidden />
+              {viewMode === "3d" ? "3D on" : "3D view"}
+            </button>
             <button
               type="button"
               onClick={handleLocateMe}
