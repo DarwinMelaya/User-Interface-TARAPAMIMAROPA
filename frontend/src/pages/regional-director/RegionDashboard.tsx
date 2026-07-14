@@ -23,6 +23,7 @@ import {
   HiUserGroup,
   HiXMark,
 } from "react-icons/hi2";
+import AnalyticsChatBot from "../../components/dashboard/AnalyticsChatBot";
 import GraphsPanel from "../../components/dashboard/GraphsPanel";
 import Maps, {
   type MapBaseLayer,
@@ -206,6 +207,7 @@ const RegionDashboard = () => {
       ? window.matchMedia("(min-width: 1024px)").matches
       : true,
   );
+  const [chatOpen, setChatOpen] = useState(false);
   const [insightIndex, setInsightIndex] = useState(0);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const [locateLoading, setLocateLoading] = useState(false);
@@ -263,7 +265,25 @@ const RegionDashboard = () => {
     search.trim().length > 0;
 
   const toggleMobileSheet = (sheet: "stats" | "feed" | "ai" | "graphs") => {
-    setMobileSheet((current) => (current === sheet ? null : sheet));
+    setMobileSheet((current) => {
+      const next = current === sheet ? null : sheet;
+      if (sheet === "ai") {
+        setChatOpen(next === "ai");
+      } else if (next !== null) {
+        setChatOpen(false);
+      }
+      return next;
+    });
+  };
+
+  const toggleChat = () => {
+    setChatOpen((open) => {
+      const next = !open;
+      if (typeof window !== "undefined" && window.innerWidth < 1024) {
+        setMobileSheet(next ? "ai" : null);
+      }
+      return next;
+    });
   };
 
   const handleLocateMe = () => {
@@ -442,11 +462,17 @@ const RegionDashboard = () => {
             </button>
             <button
               type="button"
-              onClick={() => setInsightIndex((i) => (i + 1) % AI_INSIGHTS.length)}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-violet-500/30 bg-slate-900/90 px-3 py-2 text-sm font-semibold text-violet-100 backdrop-blur-md"
+              onClick={toggleChat}
+              className={[
+                "inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold backdrop-blur-md transition",
+                chatOpen || mobileSheet === "ai"
+                  ? "border-violet-400/60 bg-violet-500/25 text-violet-100 shadow-[0_0_18px_rgba(167,139,250,0.28)]"
+                  : "border-violet-500/30 bg-slate-900/90 text-violet-100 hover:border-violet-400/50",
+              ].join(" ")}
+              aria-pressed={chatOpen || mobileSheet === "ai"}
             >
               <HiSparkles className="h-4 w-4" aria-hidden />
-              AI
+              AI chat
             </button>
             <Link
               to="/regional-director/programs"
@@ -465,7 +491,7 @@ const RegionDashboard = () => {
 
         <div className="pointer-events-auto mt-3 hidden max-w-3xl items-start gap-2 rounded-xl border border-violet-500/25 bg-slate-900/85 p-3 backdrop-blur-md lg:flex">
           <HiLightBulb className="mt-0.5 h-5 w-5 shrink-0 text-violet-300" aria-hidden />
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-violet-200/80">
               AI insight
             </p>
@@ -477,6 +503,13 @@ const RegionDashboard = () => {
             className="shrink-0 rounded-lg border border-violet-700/50 px-2 py-1 text-[10px] font-semibold text-violet-200"
           >
             Next
+          </button>
+          <button
+            type="button"
+            onClick={toggleChat}
+            className="shrink-0 rounded-lg border border-violet-400/40 bg-violet-500/20 px-2 py-1 text-[10px] font-semibold text-violet-100"
+          >
+            Open chat
           </button>
         </div>
       </header>
@@ -500,7 +533,10 @@ const RegionDashboard = () => {
         {mobileSheet ? (
           <button
             type="button"
-            onClick={() => setMobileSheet(null)}
+            onClick={() => {
+              setMobileSheet(null);
+              setChatOpen(false);
+            }}
             className="rounded-full border border-slate-600/80 bg-slate-900/90 px-3 py-2 text-xs font-bold text-slate-400"
           >
             Map
@@ -517,7 +553,7 @@ const RegionDashboard = () => {
         <div
           className={[
             "pointer-events-auto flex w-full shrink-0 flex-col overflow-hidden rounded-2xl border border-cyan-400/25 bg-slate-900/92 p-3 shadow-[0_8px_40px_rgba(0,0,0,0.45),0_0_30px_rgba(34,211,238,0.08)] backdrop-blur-xl lg:max-w-[min(420px,calc(100%-2rem))]",
-            mobileSheet === "stats" || mobileSheet === "ai"
+            mobileSheet === "stats"
               ? "max-h-[min(55vh,420px)] overflow-y-auto"
               : "hidden",
             "lg:flex lg:max-h-[min(520px,62vh)] lg:overflow-y-auto",
@@ -601,12 +637,7 @@ const RegionDashboard = () => {
             </div>
           </div>
 
-          <div
-            className={[
-              "mt-3 rounded-xl border border-violet-500/25 bg-violet-950/30 p-2.5",
-              mobileSheet === "ai" ? "block" : "hidden lg:block",
-            ].join(" ")}
-          >
+          <div className="mt-3 rounded-xl border border-violet-500/25 bg-violet-950/30 p-2.5">
             <p className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-violet-200/80">
               <HiSparkles className="h-3.5 w-3.5" aria-hidden />
               AI analytics
@@ -614,16 +645,26 @@ const RegionDashboard = () => {
             <p className="text-xs leading-relaxed text-slate-200">
               {AI_INSIGHTS[insightIndex]}
             </p>
-            <button
-              type="button"
-              onClick={() =>
-                setInsightIndex((i) => (i + 1) % AI_INSIGHTS.length)
-              }
-              className="mt-2 inline-flex items-center gap-1 text-[10px] font-semibold text-violet-300"
-            >
-              <HiArrowPath className="h-3 w-3" aria-hidden />
-              Refresh insight
-            </button>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() =>
+                  setInsightIndex((i) => (i + 1) % AI_INSIGHTS.length)
+                }
+                className="inline-flex items-center gap-1 text-[10px] font-semibold text-violet-300"
+              >
+                <HiArrowPath className="h-3 w-3" aria-hidden />
+                Refresh insight
+              </button>
+              <button
+                type="button"
+                onClick={toggleChat}
+                className="inline-flex items-center gap-1 rounded-lg border border-violet-400/40 bg-violet-500/20 px-2 py-1 text-[10px] font-semibold text-violet-100"
+              >
+                <HiSparkles className="h-3 w-3" aria-hidden />
+                Open AI chat
+              </button>
+            </div>
           </div>
 
           {hasFilters ? (
@@ -655,6 +696,23 @@ const RegionDashboard = () => {
               : "lg:max-h-14 lg:max-w-[min(240px,calc(100%-2rem))]",
           ].join(" ")}
         />
+
+        <div
+          className={[
+            mobileSheet === "ai" ? "block w-full" : "hidden",
+            "lg:hidden",
+          ].join(" ")}
+        >
+          <AnalyticsChatBot
+            open={mobileSheet === "ai"}
+            onClose={() => {
+              setMobileSheet(null);
+              setChatOpen(false);
+            }}
+            projects={filteredProjects}
+            variant="sheet"
+          />
+        </div>
 
         <div
           className={[
@@ -1005,6 +1063,18 @@ const RegionDashboard = () => {
                 : "No origin yet — Google opens with destination only. Tap Use my location for full route."}
             </p>
           </div>
+        </div>
+      ) : null}
+
+      {/* Desktop AI chat dock */}
+      {chatOpen ? (
+        <div className="pointer-events-none absolute bottom-5 right-5 z-30 hidden lg:block">
+          <AnalyticsChatBot
+            open={chatOpen}
+            onClose={() => setChatOpen(false)}
+            projects={filteredProjects}
+            variant="dock"
+          />
         </div>
       ) : null}
     </section>
