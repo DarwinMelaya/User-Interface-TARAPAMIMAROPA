@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { LandingPage, Login, RegionDashboard, RegionPrograms } from "../pages";
+import Layout from "../layout/Layout";
 
 const Routers = () => {
   return (
@@ -9,14 +10,10 @@ const Routers = () => {
         {/* auth */}
         <Route path="/login" element={<Login />} />
         {/* regional director */}
-        <Route
-          path="/regional-director/dashboard"
-          element={<RegionDashboard />}
-        />
-        <Route
-          path="/regional-director/programs"
-          element={<RegionPrograms />}
-        />
+        <Route path="/regional-director" element={<Layout />}>
+          <Route path="dashboard" element={<RegionDashboard />} />
+          <Route path="programs" element={<RegionPrograms />} />
+        </Route>
       </Routes>
     </Router>
   );
