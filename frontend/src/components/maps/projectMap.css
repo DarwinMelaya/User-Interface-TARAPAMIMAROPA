@@ -198,6 +198,38 @@
   color: #67e8f9;
 }
 
+.user-location-leaflet-icon {
+  background: transparent !important;
+  border: none !important;
+}
+
+.user-location-pin {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+}
+
+.user-location-pin__pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.35);
+  animation: project-pin-pulse 2s ease-out infinite;
+}
+
+.user-location-pin__dot {
+  position: relative;
+  z-index: 1;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: #38bdf8;
+  border: 3px solid #f8fafc;
+  box-shadow: 0 0 14px rgba(14, 165, 233, 0.8);
+}
+
 @keyframes project-pin-pulse {
   0% {
     transform: scale(0.85);

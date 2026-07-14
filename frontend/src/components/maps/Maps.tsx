@@ -142,23 +142,48 @@ const resetMarkerElevation = (marker: L.Marker) => {
   marker.setZIndexOffset?.(0);
 };
 
+export type UserLocation = {
+  lat: number;
+  lng: number;
+  accuracy?: number;
+};
+
 type MapsProps = {
   projects: TaraProject[];
   selectedId?: string | null;
   baseLayer?: MapBaseLayer;
+  userLocation?: UserLocation | null;
+  flyToUserToken?: number;
   onViewProject?: (project: TaraProject) => void;
 };
+
+const createUserLocationIcon = () =>
+  L.divIcon({
+    className: "user-location-leaflet-icon",
+    html: `
+      <div class="user-location-pin">
+        <span class="user-location-pin__pulse"></span>
+        <span class="user-location-pin__dot"></span>
+      </div>
+    `,
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
+  });
 
 const Maps = ({
   projects,
   selectedId,
   baseLayer = "street",
+  userLocation = null,
+  flyToUserToken = 0,
   onViewProject,
 }: MapsProps) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
   const tileRef = useRef<L.TileLayer | null>(null);
   const markersRef = useRef<MarkerEntry[]>([]);
+  const userMarkerRef = useRef<L.Marker | null>(null);
+  const userAccuracyRef = useRef<L.Circle | null>(null);
   const onViewProjectRef = useRef(onViewProject);
   const selectedIdRef = useRef(selectedId);
 
@@ -282,6 +307,51 @@ const Maps = ({
       map.setView(MIMAROPA_CENTER, DEFAULT_ZOOM);
     }
   }, [projects, selectedId]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    if (userMarkerRef.current) {
+      userMarkerRef.current.remove();
+      userMarkerRef.current = null;
+    }
+    if (userAccuracyRef.current) {
+      userAccuracyRef.current.remove();
+      userAccuracyRef.current = null;
+    }
+
+    if (!userLocation) return;
+
+    userAccuracyRef.current = L.circle(
+      [userLocation.lat, userLocation.lng],
+      {
+        radius: userLocation.accuracy ?? 40,
+        color: "#38bdf8",
+        fillColor: "#0ea5e9",
+        fillOpacity: 0.15,
+        weight: 1,
+      },
+    ).addTo(map);
+
+    userMarkerRef.current = L.marker([userLocation.lat, userLocation.lng], {
+      icon: createUserLocationIcon(),
+      zIndexOffset: 1200,
+    })
+      .addTo(map)
+      .bindTooltip("Your location", {
+        direction: "top",
+        offset: [0, -10],
+        opacity: 1,
+        className: "project-map-tooltip",
+      });
+  }, [userLocation]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !userLocation || flyToUserToken <= 0) return;
+    map.flyTo([userLocation.lat, userLocation.lng], 14, { duration: 0.7 });
+  }, [flyToUserToken, userLocation]);
 
   return (
     <div

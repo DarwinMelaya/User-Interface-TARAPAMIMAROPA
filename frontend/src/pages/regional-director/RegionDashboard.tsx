@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import {
   HiAcademicCap,
   HiArrowPath,
+  HiArrowTopRightOnSquare,
   HiBanknotes,
   HiBuildingOffice2,
   HiChartBar,
@@ -13,6 +14,7 @@ import {
   HiMagnifyingGlass,
   HiMap,
   HiMapPin,
+  HiPaperAirplane,
   HiPauseCircle,
   HiSignal,
   HiSparkles,
@@ -20,7 +22,10 @@ import {
   HiUserGroup,
   HiXMark,
 } from "react-icons/hi2";
-import Maps, { type MapBaseLayer } from "../../components/maps/Maps";
+import Maps, {
+  type MapBaseLayer,
+  type UserLocation,
+} from "../../components/maps/Maps";
 import {
   AI_INSIGHTS,
   MOCK_TARA_PROJECTS,
@@ -160,6 +165,21 @@ const formatStat = (
   return String(value);
 };
 
+const openGoogleDirections = (
+  project: TaraProject,
+  origin: UserLocation | null,
+) => {
+  const destination = `${project.latitude},${project.longitude}`;
+  const url = new URL("https://www.google.com/maps/dir/");
+  url.searchParams.set("api", "1");
+  url.searchParams.set("destination", destination);
+  url.searchParams.set("travelmode", "driving");
+  if (origin) {
+    url.searchParams.set("origin", `${origin.lat},${origin.lng}`);
+  }
+  window.open(url.toString(), "_blank", "noopener,noreferrer");
+};
+
 const RegionDashboard = () => {
   const [projects] = useState<TaraProject[]>(MOCK_TARA_PROJECTS);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -178,6 +198,10 @@ const RegionDashboard = () => {
   );
   const [baseLayer, setBaseLayer] = useState<MapBaseLayer>("street");
   const [insightIndex, setInsightIndex] = useState(0);
+  const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
+  const [locateLoading, setLocateLoading] = useState(false);
+  const [locateError, setLocateError] = useState("");
+  const [flyToUserToken, setFlyToUserToken] = useState(0);
 
   const stats = useMemo(() => summarizeProjects(projects), [projects]);
 
@@ -233,6 +257,46 @@ const RegionDashboard = () => {
     setMobileSheet((current) => (current === sheet ? null : sheet));
   };
 
+  const handleLocateMe = () => {
+    if (!navigator.geolocation) {
+      setLocateError("Geolocation not supported on this browser.");
+      return;
+    }
+
+    setLocateLoading(true);
+    setLocateError("");
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const next: UserLocation = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+        };
+        setUserLocation(next);
+        setFlyToUserToken((token) => token + 1);
+        setLocateLoading(false);
+      },
+      (error) => {
+        setLocateLoading(false);
+        if (error.code === error.PERMISSION_DENIED) {
+          setLocateError("Location permission denied.");
+          return;
+        }
+        if (error.code === error.POSITION_UNAVAILABLE) {
+          setLocateError("Location unavailable.");
+          return;
+        }
+        setLocateError("Could not get current location.");
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 12_000,
+        maximumAge: 15_000,
+      },
+    );
+  };
+
   return (
     <section className="fixed inset-0 z-30 overflow-hidden bg-slate-950 pb-[calc(4.5rem+env(safe-area-inset-bottom))] text-slate-100 lg:left-72 lg:pb-0">
       <div className="pointer-events-auto absolute inset-0 z-[5]">
@@ -240,6 +304,8 @@ const RegionDashboard = () => {
           projects={filteredProjects}
           selectedId={selectedId}
           baseLayer={baseLayer}
+          userLocation={userLocation}
+          flyToUserToken={flyToUserToken}
           onViewProject={handleViewProject}
         />
       </div>
@@ -302,6 +368,18 @@ const RegionDashboard = () => {
             </div>
             <button
               type="button"
+              onClick={handleLocateMe}
+              disabled={locateLoading}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-slate-900/90 px-3 py-2 text-sm font-semibold text-emerald-100 backdrop-blur-md disabled:opacity-50"
+            >
+              <HiMapPin
+                className={`h-4 w-4 ${locateLoading ? "animate-pulse" : ""}`}
+                aria-hidden
+              />
+              {locateLoading ? "Locating…" : "My location"}
+            </button>
+            <button
+              type="button"
               onClick={() => setInsightIndex((i) => (i + 1) % AI_INSIGHTS.length)}
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-violet-500/30 bg-slate-900/90 px-3 py-2 text-sm font-semibold text-violet-100 backdrop-blur-md"
             >
@@ -316,6 +394,12 @@ const RegionDashboard = () => {
             </Link>
           </div>
         </div>
+
+        {locateError ? (
+          <div className="pointer-events-auto mt-2 max-w-md rounded-xl border border-red-500/40 bg-slate-900/95 px-3 py-2 text-xs text-red-300 backdrop-blur">
+            {locateError}
+          </div>
+        ) : null}
 
         <div className="pointer-events-auto mt-3 hidden max-w-3xl items-start gap-2 rounded-xl border border-violet-500/25 bg-slate-900/85 p-3 backdrop-blur-md lg:flex">
           <HiLightBulb className="mt-0.5 h-5 w-5 shrink-0 text-violet-300" aria-hidden />
@@ -811,6 +895,34 @@ const RegionDashboard = () => {
                 Partner: {viewing.partner_agency}
               </p>
             </div>
+
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+              <button
+                type="button"
+                onClick={() => openGoogleDirections(viewing, userLocation)}
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-cyan-500/40 bg-cyan-500/15 px-4 py-3 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-500/25"
+              >
+                <HiPaperAirplane className="h-5 w-5" aria-hidden />
+                Google Maps directions
+                <HiArrowTopRightOnSquare className="h-4 w-4 opacity-70" aria-hidden />
+              </button>
+              {!userLocation ? (
+                <button
+                  type="button"
+                  onClick={handleLocateMe}
+                  disabled={locateLoading}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-100 disabled:opacity-50"
+                >
+                  <HiMapPin className="h-5 w-5" aria-hidden />
+                  {locateLoading ? "Locating…" : "Use my location"}
+                </button>
+              ) : null}
+            </div>
+            <p className="mt-2 text-[11px] text-slate-500">
+              {userLocation
+                ? "Route starts from your current GPS position."
+                : "No origin yet — Google opens with destination only. Tap Use my location for full route."}
+            </p>
           </div>
         </div>
       ) : null}
