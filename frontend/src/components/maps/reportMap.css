@@ -1,0 +1,173 @@
+.report-map-container {
+  background: #020617;
+}
+
+.report-map-container .leaflet-container {
+  height: 100%;
+  width: 100%;
+  background: #020617;
+  font-family: inherit;
+}
+
+.report-pin-leaflet-icon {
+  background: transparent !important;
+  border: none !important;
+}
+
+.report-pin {
+  position: relative;
+  width: 48px;
+  height: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45));
+  transition:
+    transform 0.18s ease,
+    filter 0.18s ease;
+}
+
+.report-pin__pulse {
+  position: absolute;
+  top: 6px;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  opacity: 0.35;
+  background: currentColor;
+  animation: report-pin-pulse 2.2s ease-out infinite;
+}
+
+.report-pin__core {
+  position: relative;
+  z-index: 2;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  color: #ecfeff;
+  background: linear-gradient(145deg, #0891b2, #1d4ed8);
+  border: 2px solid rgba(165, 243, 252, 0.65);
+  box-shadow: 0 0 18px rgba(34, 211, 238, 0.35);
+}
+
+.report-pin__glyph {
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.report-pin__point {
+  width: 12px;
+  height: 12px;
+  margin-top: -4px;
+  background: inherit;
+  background: linear-gradient(145deg, #0891b2, #1d4ed8);
+  transform: rotate(45deg);
+  border-radius: 2px;
+  z-index: 1;
+}
+
+.report-pin--danger .report-pin__core,
+.report-pin--danger .report-pin__point {
+  background: linear-gradient(145deg, #f43f5e, #b91c1c);
+  border-color: rgba(254, 202, 202, 0.7);
+  box-shadow: 0 0 18px rgba(244, 63, 94, 0.45);
+}
+
+.report-pin--warning .report-pin__core,
+.report-pin--warning .report-pin__point {
+  background: linear-gradient(145deg, #f59e0b, #c2410c);
+  border-color: rgba(253, 230, 138, 0.7);
+  box-shadow: 0 0 18px rgba(245, 158, 11, 0.4);
+}
+
+.report-pin--info .report-pin__core,
+.report-pin--info .report-pin__point {
+  background: linear-gradient(145deg, #22d3ee, #2563eb);
+}
+
+.report-pin--neutral .report-pin__core,
+.report-pin--neutral .report-pin__point {
+  background: linear-gradient(145deg, #64748b, #334155);
+  border-color: rgba(203, 213, 225, 0.5);
+  box-shadow: 0 0 12px rgba(100, 116, 139, 0.35);
+}
+
+.report-pin--hover,
+.report-pin--active {
+  transform: translateY(-2px) scale(1.08);
+  filter: drop-shadow(0 10px 16px rgba(34, 211, 238, 0.35));
+}
+
+.report-pin--active .report-pin__core {
+  border-color: #67e8f9;
+  box-shadow: 0 0 24px rgba(34, 211, 238, 0.7);
+}
+
+.leaflet-tooltip.report-map-tooltip {
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  color: #e2e8f0;
+}
+
+.leaflet-tooltip.report-map-tooltip::before {
+  display: none;
+}
+
+.report-map-tooltip__inner {
+  min-width: 180px;
+  max-width: 240px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(34, 211, 238, 0.35);
+  background: rgba(2, 6, 23, 0.92);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+}
+
+.report-map-tooltip__inner strong {
+  display: block;
+  font-size: 12px;
+  color: #a5f3fc;
+}
+
+.report-map-tooltip__inner span {
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  color: #94a3b8;
+}
+
+.report-map-tooltip__inner p {
+  margin: 6px 0 0;
+  font-size: 11px;
+  line-height: 1.35;
+  color: #cbd5e1;
+}
+
+.report-map-tooltip__inner em {
+  display: block;
+  margin-top: 8px;
+  font-size: 10px;
+  font-style: normal;
+  color: #67e8f9;
+}
+
+@keyframes report-pin-pulse {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.45;
+  }
+  70% {
+    transform: scale(1.45);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.45);
+    opacity: 0;
+  }
+}
