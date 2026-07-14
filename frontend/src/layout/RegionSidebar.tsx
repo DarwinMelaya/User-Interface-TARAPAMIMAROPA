@@ -114,10 +114,10 @@ const RegionSidebar = () => {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-white">
-                    Regional Director
+                    TARA PAMIMAROPA
                   </p>
                   <p className="text-xs text-blue-200/70">
-                    Programs & oversight
+                    STI Command Center
                   </p>
                 </div>
               </div>
@@ -187,9 +187,9 @@ const RegionSidebar = () => {
             <HiShieldCheck className="h-5 w-5" aria-hidden />
           </div>
           <div className="mt-3 text-sm font-semibold tracking-wide text-white">
-            Regional Director
+            TARA PAMIMAROPA
           </div>
-          <div className="text-xs text-blue-200/80">Programs and Oversight</div>
+          <div className="text-xs text-blue-200/80">STI Command Center</div>
         </div>
 
         <nav className="flex-1 px-4 py-5">
