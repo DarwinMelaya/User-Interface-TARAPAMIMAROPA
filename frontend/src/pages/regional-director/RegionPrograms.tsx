@@ -493,6 +493,7 @@ const RegionPrograms = () => {
                 <th className="px-3 py-2.5 font-bold">Project</th>
                 <th className="px-3 py-2.5 font-bold">Type</th>
                 <th className="px-3 py-2.5 font-bold">Year</th>
+                <th className="px-3 py-2.5 font-bold">Beneficiary</th>
                 <th className="px-3 py-2.5 font-bold">Sector</th>
                 <th className="px-3 py-2.5 font-bold">Municipality</th>
                 <th className="px-3 py-2.5 font-bold">Status</th>
@@ -503,7 +504,7 @@ const RegionPrograms = () => {
               {scopedProjects.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={8}
+                    colSpan={9}
                     className="px-4 py-10 text-center text-sm text-slate-500"
                   >
                     No projects in this province yet.
@@ -530,6 +531,9 @@ const RegionPrograms = () => {
                     </td>
                     <td className="px-3 py-2.5 text-slate-400">
                       {projectYear(project)}
+                    </td>
+                    <td className="max-w-[200px] px-3 py-2.5 text-slate-400">
+                      {project.beneficiary}
                     </td>
                     <td className="max-w-[160px] px-3 py-2.5 text-slate-400">
                       {project.sector}
@@ -612,6 +616,14 @@ const RegionPrograms = () => {
                 </dt>
                 <dd className="mt-0.5 font-semibold text-white">
                   {projectYear(viewing)}
+                </dd>
+              </div>
+              <div className="col-span-2">
+                <dt className="text-[11px] uppercase tracking-wide text-slate-500">
+                  Beneficiary
+                </dt>
+                <dd className="mt-0.5 font-semibold text-white">
+                  {viewing.beneficiary}
                 </dd>
               </div>
               <div className="col-span-2">

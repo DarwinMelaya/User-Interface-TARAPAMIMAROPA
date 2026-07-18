@@ -81,6 +81,7 @@ const toTaraProject = (p: ImpressionProject): TaraProject => {
   const status = STATUS_FROM_IMPRESSION[p.status];
   return {
     description: p.description,
+    beneficiary: p.beneficiary,
     sector: p.sector,
     id: p.code,
     name: p.title,

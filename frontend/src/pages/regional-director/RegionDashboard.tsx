@@ -2,12 +2,10 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   HiAcademicCap,
-  HiArrowPath,
   HiArrowTopRightOnSquare,
   HiBanknotes,
   HiBuildingOffice2,
   HiChartBar,
-  HiClock,
   HiDocumentArrowDown,
   HiDocumentText,
   HiExclamationTriangle,
@@ -38,7 +36,6 @@ import {
   AI_INSIGHTS,
   MOCK_TARA_PROJECTS,
   PROGRAM_META,
-  PROGRAMS,
   PROVINCES,
   STATUS_META,
   describeProject,
@@ -385,14 +382,12 @@ const RegionDashboard = () => {
   const [programFilter, setProgramFilter] = useState<TaraProgram | "all">("all");
   const [statusFilter, setStatusFilter] = useState<ProjectStatus | "all">("all");
   const [search, setSearch] = useState("");
-  const [feedExpanded, setFeedExpanded] = useState(false);
   const [mobileSheet, setMobileSheet] = useState<
     "stats" | "feed" | "ai" | "graphs" | null
   >(null);
   const [baseLayer, setBaseLayer] = useState<MapBaseLayer>("satellite");
   const [viewMode, setViewMode] = useState<MapViewMode>("2d");
   const [graphsExpanded, setGraphsExpanded] = useState(false);
-  const [statsExpanded, setStatsExpanded] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
@@ -423,6 +418,11 @@ const RegionDashboard = () => {
       );
     });
   }, [projects, provinceFilter, programFilter, statusFilter, search]);
+
+  const scoped = useMemo(
+    () => summarizeProjects(filteredProjects),
+    [filteredProjects],
+  );
 
   const handleViewProject = (project: TaraProject) => {
     setSelectedId(project.id);
@@ -921,34 +921,24 @@ const RegionDashboard = () => {
       >
         <div
           className={[
-            "pointer-events-auto flex w-full shrink-0 flex-col overflow-hidden rounded-2xl border border-cyan-400/25 bg-slate-900/92 p-3 shadow-[0_8px_40px_rgba(0,0,0,0.45),0_0_30px_rgba(34,211,238,0.08)] backdrop-blur-xl lg:max-w-[min(420px,calc(100%-2rem))]",
+            "pointer-events-auto flex w-full shrink-0 flex-col overflow-hidden rounded-2xl border border-cyan-400/25 bg-slate-900/92 p-3 shadow-[0_8px_40px_rgba(0,0,0,0.45),0_0_30px_rgba(34,211,238,0.08)] backdrop-blur-xl lg:max-w-[min(340px,calc(100%-2rem))]",
             mobileSheet === "stats"
               ? "max-h-[min(55vh,420px)] overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]"
               : "hidden",
             "lg:flex lg:max-h-[min(520px,62vh)] lg:overflow-y-auto",
           ].join(" ")}
         >
-          <div className="mb-2.5 flex shrink-0 items-center justify-between gap-2">
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-cyan-200/85">
-              Executive overview
-            </p>
-            <button
-              type="button"
-              onClick={() => setStatsExpanded((v) => !v)}
-              className="rounded-lg border border-slate-700/80 px-2 py-1 text-[10px] font-semibold text-slate-400 transition hover:text-white"
-              aria-expanded={statsExpanded}
-            >
-              {statsExpanded ? "Collapse" : "Expand"}
-            </button>
-          </div>
-          {statsExpanded ? (
-          <>
+          <p className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.18em] text-cyan-200/85">
+            Regional overview
+          </p>
           <div className="grid w-full grid-cols-2 gap-2">
-            {STAT_CARDS.map((card) => {
+            {STAT_CARDS.filter((c) =>
+              ["total", "active", "completed", "funding"].includes(c.key),
+            ).map((card) => {
               const Icon = card.icon;
               const isActive =
                 card.statusFilter != null && statusFilter === card.statusFilter;
-              const value = stats[card.key];
+              const value = scoped[card.key];
 
               return (
                 <button
@@ -974,9 +964,6 @@ const RegionDashboard = () => {
                   >
                     {formatStat(value, card.format)}
                   </p>
-                  <p className="mt-0.5 text-[9px] font-semibold text-white/50">
-                    {card.trend}
-                  </p>
                 </button>
               );
             })}
@@ -985,7 +972,7 @@ const RegionDashboard = () => {
           <div className="mt-3 rounded-xl border border-slate-700/70 bg-slate-950/50 p-2.5">
             <p className="mb-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
               <HiMapPin className="h-3.5 w-3.5" aria-hidden />
-              Province explorer
+              Province
             </p>
             <div className="flex flex-wrap gap-1">
               <button
@@ -1018,36 +1005,6 @@ const RegionDashboard = () => {
             </div>
           </div>
 
-          <div className="mt-3 rounded-xl border border-violet-500/25 bg-violet-950/30 p-2.5">
-            <p className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-violet-200/80">
-              <HiSparkles className="h-3.5 w-3.5" aria-hidden />
-              AI analytics
-            </p>
-            <p className="text-xs leading-relaxed text-slate-200">
-              {AI_INSIGHTS[insightIndex]}
-            </p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() =>
-                  setInsightIndex((i) => (i + 1) % AI_INSIGHTS.length)
-                }
-                className="inline-flex items-center gap-1 text-[10px] font-semibold text-violet-300"
-              >
-                <HiArrowPath className="h-3 w-3" aria-hidden />
-                Refresh insight
-              </button>
-              <button
-                type="button"
-                onClick={toggleChat}
-                className="inline-flex items-center gap-1 rounded-lg border border-violet-400/40 bg-violet-500/20 px-2 py-1 text-[10px] font-semibold text-violet-100"
-              >
-                <HiSparkles className="h-3 w-3" aria-hidden />
-                Open AI chat
-              </button>
-            </div>
-          </div>
-
           {hasFilters ? (
             <button
               type="button"
@@ -1056,8 +1013,6 @@ const RegionDashboard = () => {
             >
               Clear filters
             </button>
-          ) : null}
-          </>
           ) : null}
         </div>
 
@@ -1099,220 +1054,118 @@ const RegionDashboard = () => {
 
         <div
           className={[
-            "pointer-events-auto flex w-full flex-col overflow-hidden rounded-2xl border border-cyan-400/25 bg-slate-900/95 shadow-[0_8px_48px_rgba(0,0,0,0.5),0_0_24px_rgba(34,211,238,0.1)] backdrop-blur-xl transition-all duration-300",
+            "pointer-events-auto flex w-full flex-col overflow-hidden rounded-2xl border border-cyan-400/25 bg-slate-900/95 shadow-[0_8px_48px_rgba(0,0,0,0.5),0_0_24px_rgba(34,211,238,0.1)] backdrop-blur-xl",
             mobileSheet === "feed" ? "max-h-[min(58vh,460px)]" : "hidden",
             "lg:flex lg:max-h-[min(520px,62vh)] lg:max-w-[min(420px,calc(100%-2rem))]",
-            feedExpanded ? "lg:max-h-[min(520px,62vh)]" : "lg:max-h-14",
           ].join(" ")}
         >
           <div className="border-b border-cyan-900/50 px-3 py-3 sm:px-4">
             <div className="flex items-center justify-between gap-2">
-              <button
-                type="button"
-                onClick={() => setFeedExpanded((v) => !v)}
-                className="flex min-w-0 flex-1 items-center gap-2 text-left"
-              >
-                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-cyan-200/90">
-                  Project feed
-                </p>
-                <span className="rounded-full bg-cyan-500/20 px-2 py-0.5 text-[10px] font-bold text-cyan-300">
-                  {filteredProjects.length}
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setFeedExpanded((v) => !v)}
-                className="rounded-lg border border-slate-700/80 px-2 py-1 text-[10px] font-semibold text-slate-400 hover:text-white"
-                aria-expanded={feedExpanded}
-              >
-                {feedExpanded ? "Collapse" : "Expand"}
-              </button>
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-cyan-200/90">
+                Project feed
+              </p>
+              <span className="rounded-full bg-cyan-500/20 px-2 py-0.5 text-[10px] font-bold text-cyan-300">
+                {filteredProjects.length}
+              </span>
             </div>
-
-            {feedExpanded ? (
-              <>
-                <div className="relative mt-2.5">
-                  <HiMagnifyingGlass
-                    className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500"
-                    aria-hidden
-                  />
-                  <input
-                    type="search"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search projects, programs, LGU…"
-                    className="w-full rounded-xl border border-slate-700/80 bg-slate-950/80 py-2 pl-9 pr-3 text-xs text-white placeholder:text-slate-500 outline-none focus:border-cyan-500/40 focus:ring-1 focus:ring-cyan-500/25"
-                  />
-                </div>
-                <div className="mt-2 flex flex-wrap gap-1">
-                  <span className="mr-1 inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-slate-500">
-                    <HiFunnel className="h-3 w-3" aria-hidden />
-                    Program
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setProgramFilter("all")}
-                    className={[
-                      "rounded-full px-2.5 py-1 text-[10px] font-semibold",
-                      programFilter === "all"
-                        ? "bg-cyan-400 text-slate-950"
-                        : "border border-slate-700/80 text-slate-400",
-                    ].join(" ")}
-                  >
-                    All
-                  </button>
-                  {PROGRAMS.slice(0, 8).map((program) => (
-                    <button
-                      key={program}
-                      type="button"
-                      onClick={() => setProgramFilter(program)}
-                      className={[
-                        "rounded-full px-2.5 py-1 text-[10px] font-semibold",
-                        programFilter === program
-                          ? "bg-cyan-400 text-slate-950"
-                          : "border border-slate-700/80 text-slate-400",
-                      ].join(" ")}
-                    >
-                      {PROGRAM_META[program].short}
-                    </button>
-                  ))}
-                </div>
-                <div className="mt-1.5 flex flex-wrap gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setStatusFilter("all")}
-                    className={[
-                      "rounded-full px-2.5 py-1 text-[10px] font-semibold",
-                      statusFilter === "all"
-                        ? "bg-blue-500 text-white"
-                        : "border border-slate-700/80 text-slate-400",
-                    ].join(" ")}
-                  >
-                    All status
-                  </button>
-                  {(
-                    [
-                      "ongoing",
-                      "completed",
-                      "delayed",
-                      "on_hold",
-                      "planning",
-                    ] as ProjectStatus[]
-                  ).map((status) => (
-                    <button
-                      key={status}
-                      type="button"
-                      onClick={() => setStatusFilter(status)}
-                      className={[
-                        "rounded-full px-2.5 py-1 text-[10px] font-semibold",
-                        statusFilter === status
-                          ? "bg-blue-500 text-white"
-                          : "border border-slate-700/80 text-slate-400",
-                      ].join(" ")}
-                    >
-                      {STATUS_META[status].label}
-                    </button>
-                  ))}
-                </div>
-              </>
-            ) : null}
+            <div className="mt-2 flex flex-wrap gap-1">
+              <button
+                type="button"
+                onClick={() => setStatusFilter("all")}
+                className={[
+                  "rounded-full px-2.5 py-1 text-[10px] font-semibold",
+                  statusFilter === "all"
+                    ? "bg-cyan-500 text-white"
+                    : "border border-slate-700/80 text-slate-400",
+                ].join(" ")}
+              >
+                All status
+              </button>
+              {(
+                [
+                  "ongoing",
+                  "completed",
+                  "delayed",
+                  "on_hold",
+                  "planning",
+                ] as ProjectStatus[]
+              ).map((status) => (
+                <button
+                  key={status}
+                  type="button"
+                  onClick={() => setStatusFilter(status)}
+                  className={[
+                    "rounded-full px-2.5 py-1 text-[10px] font-semibold",
+                    statusFilter === status
+                      ? "bg-cyan-500 text-white"
+                      : "border border-slate-700/80 text-slate-400",
+                  ].join(" ")}
+                >
+                  {STATUS_META[status].label}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {feedExpanded ? (
-            <ul className="flex-1 overflow-y-auto overscroll-contain p-2 sm:p-3 [-webkit-overflow-scrolling:touch] [scrollbar-width:thin]">
-              {filteredProjects.length === 0 ? (
-                <li className="flex flex-col items-center px-4 py-10 text-center">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-cyan-800/50 bg-cyan-950/50">
-                    <HiBuildingOffice2
-                      className="h-6 w-6 text-cyan-500/70"
-                      aria-hidden
-                    />
-                  </div>
-                  <p className="mt-3 text-sm font-semibold text-white">
-                    No projects on map
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    Adjust province, program, or search filters.
-                  </p>
+          <ul className="flex-1 overflow-y-auto overscroll-contain p-2 sm:p-3 [-webkit-overflow-scrolling:touch] [scrollbar-width:thin]">
+            {filteredProjects.length === 0 ? (
+              <li className="flex flex-col items-center px-4 py-10 text-center">
+                <HiBuildingOffice2
+                  className="h-8 w-8 text-cyan-500/60"
+                  aria-hidden
+                />
+                <p className="mt-3 text-sm font-semibold text-white">
+                  No projects
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  Adjust province, status, or search filters.
+                </p>
+              </li>
+            ) : null}
+
+            {filteredProjects.map((project) => {
+              const status = STATUS_META[project.status];
+              const program = PROGRAM_META[project.program];
+              const isSelected = selectedId === project.id;
+
+              return (
+                <li key={project.id} className="mb-2 last:mb-0">
+                  <button
+                    type="button"
+                    onClick={() => handleViewProject(project)}
+                    className={[
+                      "flex w-full flex-col gap-1 rounded-xl border p-2.5 text-left transition",
+                      isSelected
+                        ? "border-cyan-400/60 bg-cyan-400/15 shadow-[0_0_24px_rgba(34,211,238,0.2)]"
+                        : "border-slate-800/80 bg-slate-800/40 hover:border-slate-600/80 hover:bg-slate-800/70",
+                    ].join(" ")}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${status.className}`}
+                      >
+                        {status.label}
+                      </span>
+                      <span className="text-[11px] font-bold text-cyan-200">
+                        {formatCompact(project.budget)}
+                      </span>
+                    </div>
+                    <p className="line-clamp-1 text-sm font-semibold text-white">
+                      {project.name}
+                    </p>
+                    <p className="line-clamp-1 text-[11px] text-slate-400">
+                      {project.municipality}, {project.province} ·{" "}
+                      <span className={program.accent}>{project.program}</span>
+                    </p>
+                    <p className="flex items-center gap-1 font-mono text-[10px] text-slate-500">
+                      <HiMapPin className="h-3 w-3" aria-hidden />
+                      {project.latitude.toFixed(4)}, {project.longitude.toFixed(4)}
+                    </p>
+                  </button>
                 </li>
-              ) : null}
-
-              {filteredProjects.map((project) => {
-                const status = STATUS_META[project.status];
-                const program = PROGRAM_META[project.program];
-                const isSelected = selectedId === project.id;
-
-                return (
-                  <li key={project.id} className="mb-2 last:mb-0">
-                    <button
-                      type="button"
-                      onClick={() => handleViewProject(project)}
-                      className={[
-                        "relative flex w-full gap-3 overflow-hidden rounded-xl border p-2.5 text-left transition",
-                        isSelected
-                          ? "border-cyan-400/60 bg-cyan-400/15 shadow-[0_0_24px_rgba(34,211,238,0.2)]"
-                          : "border-slate-800/80 bg-slate-800/40 hover:border-slate-600/80 hover:bg-slate-800/70",
-                      ].join(" ")}
-                    >
-                      {project.status === "delayed" ? (
-                        <span className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-red-400 to-orange-500" />
-                      ) : null}
-
-                      <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-lg bg-slate-950/80 ring-1 ring-slate-700/60">
-                        <span
-                          className={`text-[10px] font-extrabold uppercase ${program.accent}`}
-                        >
-                          {program.short}
-                        </span>
-                        <span className="mt-1 text-[10px] font-bold text-white">
-                          {project.progress}%
-                        </span>
-                      </div>
-
-                      <div className="min-w-0 flex-1 py-0.5">
-                        <div className="mb-1 flex flex-wrap items-center gap-1.5">
-                          <span
-                            className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${status.className}`}
-                          >
-                            {status.label}
-                          </span>
-                          <span className="text-[10px] text-slate-500">
-                            {project.program}
-                          </span>
-                        </div>
-                        <p className="line-clamp-1 text-sm font-semibold text-white">
-                          {project.name}
-                        </p>
-                        <p className="mt-0.5 line-clamp-1 text-[11px] text-slate-400">
-                          {project.municipality}, {project.province}
-                        </p>
-                        <div className="mt-1.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 text-[10px] text-slate-500">
-                          <span className="flex items-center gap-1">
-                            <HiBanknotes className="h-3 w-3" aria-hidden />
-                            {formatCompact(project.budget)}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <HiUserGroup className="h-3 w-3" aria-hidden />
-                            {formatCompact(project.beneficiaries)}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <HiClock className="h-3 w-3" aria-hidden />
-                            {project.end_date.slice(0, 7)}
-                          </span>
-                        </div>
-                        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-800">
-                          <div
-                            className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-blue-500"
-                            style={{ width: `${project.progress}%` }}
-                          />
-                        </div>
-                      </div>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          ) : null}
+              );
+            })}
+          </ul>
         </div>
       </div>
 
@@ -1366,6 +1219,12 @@ const RegionDashboard = () => {
                 <p className="text-slate-500">Year</p>
                 <p className="mt-1 font-semibold text-white">
                   {projectYear(viewing)}
+                </p>
+              </div>
+              <div className="col-span-2 rounded-xl border border-slate-700/70 bg-slate-950/50 p-3">
+                <p className="text-slate-500">Beneficiary</p>
+                <p className="mt-1 font-semibold text-white">
+                  {viewing.beneficiary}
                 </p>
               </div>
               <div className="col-span-2 rounded-xl border border-slate-700/70 bg-slate-950/50 p-3">

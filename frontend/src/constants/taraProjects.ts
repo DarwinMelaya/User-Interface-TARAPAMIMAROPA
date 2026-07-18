@@ -43,6 +43,7 @@ export type TaraProject = {
   id: string;
   name: string;
   description: string;
+  beneficiary: string;
   program: TaraProgram;
   sector: TaraSector;
   province: Province;
@@ -243,6 +244,7 @@ export const describeProject = (p: TaraProject) =>
 export const MOCK_TARA_PROJECTS: TaraProject[] = [
   {
     id: "prj-001",
+    beneficiary: "Calapan Food Processors Association",
     sector: "Food Processing",
     name: "Calapan Food Processing SETUP Cluster",
     description:
@@ -265,6 +267,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-002",
+    beneficiary: "DepEd Marinduque - Torrijos District",
     sector: "ICT",
     name: "Torrijos STARBOOKS Learning Hub",
     description:
@@ -287,6 +290,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-003",
+    beneficiary: "Coron Municipal Fisherfolk & BFAR",
     sector: "Agriculture / Marine / Aquaculture / Forestry / Livestock",
     name: "Coron Coral Restoration Pilot",
     description:
@@ -309,6 +313,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-004",
+    beneficiary: "Barangay Claudio Salgado Water Association",
     sector: "Other Regional Industry Priorities",
     name: "Sablayan Community Water System",
     description:
@@ -331,6 +336,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-005",
+    beneficiary: "Barangay Poctoy Off-Grid Households",
     sector: "Other Regional Industry Priorities",
     name: "Odiongan Renewable Microgrid Demo",
     description:
@@ -353,6 +359,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-006",
+    beneficiary: "Palawan Startups & MSMEs",
     sector: "ICT",
     name: "Puerto Princesa iHub Expansion",
     description:
@@ -375,6 +382,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-007",
+    beneficiary: "Balimbing Farmers Cooperative",
     sector: "Agriculture / Marine / Aquaculture / Forestry / Livestock",
     name: "Boac CEST Upland Farming Support",
     description:
@@ -397,6 +405,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-008",
+    beneficiary: "Municipality of Mamburao (PDRRMO)",
     sector: "Other Regional Industry Priorities",
     name: "Mamburao Disaster Early Warning Node",
     description:
@@ -419,6 +428,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-009",
+    beneficiary: "Roxas Seaweed Farmers Association",
     sector: "Agriculture / Marine / Aquaculture / Forestry / Livestock",
     name: "Roxas Seaweed Processing SETUP",
     description:
@@ -441,6 +451,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-010",
+    beneficiary: "Romblon State University",
     sector: "Other Regional Industry Priorities",
     name: "San Fernando REIINN Satellite Lab",
     description:
@@ -465,6 +476,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   // ── Oriental Mindoro ──────────────────────────────────────────────
   {
     id: "prj-011",
+    beneficiary: "Naujan Rice Farmers Cooperative",
     sector: "Agriculture / Marine / Aquaculture / Forestry / Livestock",
     name: "Naujan Rice Mill Productivity Upgrade (SETUP)",
     description:
@@ -488,6 +500,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-012",
+    beneficiary: "Marfrancisco Coastal Communities",
     sector: "Other Regional Industry Priorities",
     name: "Pinamalayan CEST Coastal Community Program",
     description:
@@ -511,6 +524,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-013",
+    beneficiary: "Victoria Vegetable Growers Association",
     sector: "Agriculture / Marine / Aquaculture / Forestry / Livestock",
     name: "Victoria Smart Agriculture Demonstration Farm",
     description:
@@ -534,6 +548,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-014",
+    beneficiary: "Sabang Dive Operators & BFAR",
     sector: "Agriculture / Marine / Aquaculture / Forestry / Livestock",
     name: "Puerto Galera Coral Reef Rehabilitation Initiative",
     description:
@@ -557,6 +572,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-015",
+    beneficiary: "Oriental Mindoro Innovators & Startups",
     sector: "ICT",
     name: "Calapan City Innovation Hub (iHub) Expansion",
     description:
@@ -581,6 +597,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   // ── Occidental Mindoro ────────────────────────────────────────────
   {
     id: "prj-016",
+    beneficiary: "San Jose Aquaculture Traders Association",
     sector: "Agriculture / Marine / Aquaculture / Forestry / Livestock",
     name: "San Jose Aquaculture Cold Chain SETUP",
     description:
@@ -604,6 +621,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-017",
+    beneficiary: "Barangay Rumbang Community Association",
     sector: "Other Regional Industry Priorities",
     name: "Rizal Renewable Energy Community Microgrid",
     description:
@@ -626,6 +644,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-018",
+    beneficiary: "Abra de Ilog Poblacion Water Association",
     sector: "Other Regional Industry Priorities",
     name: "Abra de Ilog Potable Water Systems Project",
     description:
@@ -648,6 +667,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-019",
+    beneficiary: "DepEd Occidental Mindoro - Lubang District",
     sector: "ICT",
     name: "Lubang Island STARBOOKS Learning Network",
     description:
@@ -670,6 +690,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-020",
+    beneficiary: "Sablayan Cashew Processors Association",
     sector: "Food Processing",
     name: "Sablayan Technology Transfer for Cashew Processors",
     description:
@@ -694,6 +715,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   // ── Marinduque ────────────────────────────────────────────────────
   {
     id: "prj-021",
+    beneficiary: "Gasan Coco Sugar Producers Cooperative",
     sector: "Food Processing",
     name: "Gasan Coco Sugar Production SETUP",
     description:
@@ -716,6 +738,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-022",
+    beneficiary: "Santa Cruz Marine Products Traders",
     sector: "Agriculture / Marine / Aquaculture / Forestry / Livestock",
     name: "Santa Cruz Marine Products Cold Storage (GIA)",
     description:
@@ -738,6 +761,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-023",
+    beneficiary: "Buenavista VCO Producers Cooperative",
     sector: "Health & Wellness Products",
     name: "Buenavista Virgin Coconut Oil Health Products",
     description:
@@ -762,6 +786,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   // ── Romblon ───────────────────────────────────────────────────────
   {
     id: "prj-024",
+    beneficiary: "Romblon Marble Craftsmen Association",
     sector: "Gifts / Decors / Handicrafts",
     name: "Romblon Marble Craft Technology Transfer",
     description:
@@ -784,6 +809,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-025",
+    beneficiary: "Cajidiocan Upland Farmers Association",
     sector: "Agriculture / Marine / Aquaculture / Forestry / Livestock",
     name: "Cajidiocan Upland Agriculture Support",
     description:
@@ -806,6 +832,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-026",
+    beneficiary: "Municipality of Santa Fe (PDRRMO)",
     sector: "Other Regional Industry Priorities",
     name: "Santa Fe Disaster Early Warning Network",
     description:
@@ -828,6 +855,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-027",
+    beneficiary: "Odiongan Food Processors Guild",
     sector: "Food Processing",
     name: "Odiongan Food Processing Shared Facility (SETUP)",
     description:
@@ -852,6 +880,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   // ── Palawan ───────────────────────────────────────────────────────
   {
     id: "prj-028",
+    beneficiary: "El Nido Tourism Enterprises Council",
     sector: "Other Regional Industry Priorities",
     name: "El Nido Sustainable Tourism Innovation Hub",
     description:
@@ -874,6 +903,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-029",
+    beneficiary: "Roxas Palawan Seaweed Growers Association",
     sector: "Agriculture / Marine / Aquaculture / Forestry / Livestock",
     name: "Roxas Palawan Seaweed Processing SETUP",
     description:
@@ -896,6 +926,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-030",
+    beneficiary: "Barangay Mainit Community Association",
     sector: "Other Regional Industry Priorities",
     name: "Brooke's Point Renewable Energy Livelihood Project",
     description:
@@ -918,6 +949,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-031",
+    beneficiary: "Narra Rice Farmers Association",
     sector: "Agriculture / Marine / Aquaculture / Forestry / Livestock",
     name: "Narra Community Agriculture GIA Program",
     description:
@@ -940,6 +972,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-032",
+    beneficiary: "DepEd Palawan - Coron District",
     sector: "ICT",
     name: "Coron STARBOOKS and Digital Literacy Hub",
     description:
