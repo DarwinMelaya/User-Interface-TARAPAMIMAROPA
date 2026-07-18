@@ -32,6 +32,7 @@ export type Province =
 export type TaraProject = {
   id: string;
   name: string;
+  description: string;
   program: TaraProgram;
   province: Province;
   municipality: string;
@@ -204,17 +205,21 @@ export const formatCompact = (n: number) =>
 export const projectImage = (seed: string) =>
   `https://picsum.photos/seed/${encodeURIComponent(seed)}/640/320`;
 
-/** Human-readable description generated from a project's fields. */
+/** Description for a project — uses the authored text, falls back to a generated one. */
 export const describeProject = (p: TaraProject) =>
-  `${p.name} is a ${p.program} initiative implemented in Barangay ${p.barangay}, ${p.municipality}, ${p.province}. Funded through ${p.funding_source} with a budget of ${formatPeso(
-    p.budget,
-  )}, it benefits ${p.beneficiaries.toLocaleString()} beneficiaries in partnership with ${p.partner_agency}. As of the latest update it is ${p.status.toLowerCase()} at ${p.progress}% completion.`;
+  p.description?.trim()
+    ? p.description
+    : `${p.name} is a ${p.program} initiative implemented in Barangay ${p.barangay}, ${p.municipality}, ${p.province}. Funded through ${p.funding_source} with a budget of ${formatPeso(
+        p.budget,
+      )}, it benefits ${p.beneficiaries.toLocaleString()} beneficiaries in partnership with ${p.partner_agency}. As of the latest update it is ${p.status.toLowerCase()} at ${p.progress}% completion.`;
 
 /** Demo seed — replace with Laravel/PostGIS API later. */
 export const MOCK_TARA_PROJECTS: TaraProject[] = [
   {
     id: "prj-001",
     name: "Calapan Food Processing SETUP Cluster",
+    description:
+      "Provision of shared food-processing and packaging equipment to a cluster of Calapan MSMEs to raise output, improve product quality, and widen market access.",
     program: "SETUP",
     province: "Oriental Mindoro",
     municipality: "Calapan City",
@@ -234,6 +239,8 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   {
     id: "prj-002",
     name: "Torrijos STARBOOKS Learning Hub",
+    description:
+      "Deployment of the DOST STARBOOKS offline science digital library so Torrijos students and teachers can access STEM learning resources even without internet.",
     program: "STARBOOKS",
     province: "Marinduque",
     municipality: "Torrijos",
@@ -253,6 +260,8 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   {
     id: "prj-003",
     name: "Coron Coral Restoration Pilot",
+    description:
+      "Pilot coral reef restoration through fragment transplantation across priority dive sites to rehabilitate marine biodiversity and sustain coastal tourism and fisheries.",
     program: "Coral Restoration",
     province: "Palawan",
     municipality: "Coron",
@@ -272,6 +281,8 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   {
     id: "prj-004",
     name: "Sablayan Community Water System",
+    description:
+      "Construction of a community potable water system with new pipelines and reservoirs to deliver safe, reliable water to underserved barangays in Sablayan.",
     program: "Water Projects",
     province: "Occidental Mindoro",
     municipality: "Sablayan",
@@ -291,6 +302,8 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   {
     id: "prj-005",
     name: "Odiongan Renewable Microgrid Demo",
+    description:
+      "Demonstration solar-plus-storage microgrid delivering stable, clean electricity to off-grid households and enterprises in Odiongan.",
     program: "Renewable Energy",
     province: "Romblon",
     municipality: "Odiongan",
@@ -310,6 +323,8 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   {
     id: "prj-006",
     name: "Puerto Princesa iHub Expansion",
+    description:
+      "Expansion of the Puerto Princesa innovation hub with prototyping equipment and co-working space to support startups, researchers, and MSMEs.",
     program: "iHub",
     province: "Palawan",
     municipality: "Puerto Princesa City",
@@ -329,6 +344,8 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   {
     id: "prj-007",
     name: "Boac CEST Upland Farming Support",
+    description:
+      "Convergence of S&T interventions delivering climate-smart farming kits, training, and soil health support to upland farming communities in Boac.",
     program: "CEST",
     province: "Marinduque",
     municipality: "Boac",
@@ -348,6 +365,8 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   {
     id: "prj-008",
     name: "Mamburao Disaster Early Warning Node",
+    description:
+      "Installation of automated rain and river-level sensors linked to a community early-warning system to reduce flood risk for Mamburao residents.",
     program: "Disaster Resilience",
     province: "Occidental Mindoro",
     municipality: "Mamburao",
@@ -367,6 +386,8 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   {
     id: "prj-009",
     name: "Roxas Seaweed Processing SETUP",
+    description:
+      "Provision of drying, milling, and packaging equipment to seaweed farmers in Roxas to add value to raw seaweed and increase household income.",
     program: "SETUP",
     province: "Oriental Mindoro",
     municipality: "Roxas",
@@ -386,6 +407,8 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   {
     id: "prj-010",
     name: "San Fernando REIINN Satellite Lab",
+    description:
+      "Establishment of a regional research and innovation satellite laboratory to support local testing, product development, and academe-industry collaboration.",
     program: "REIINN",
     province: "Romblon",
     municipality: "San Fernando",
@@ -407,6 +430,8 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   {
     id: "prj-011",
     name: "Naujan Rice Mill Productivity Upgrade (SETUP)",
+    description:
+      "Acquisition of a modern multi-pass rice mill with GMP training to cut milling losses and improve rice quality for farmer-members in Naujan.",
     program: "SETUP",
     province: "Oriental Mindoro",
     municipality: "Naujan",
@@ -427,6 +452,8 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   {
     id: "prj-012",
     name: "Pinamalayan CEST Coastal Community Program",
+    description:
+      "Integrated S&T package delivering livelihood, potable water, and health interventions to poor coastal barangays in Pinamalayan.",
     program: "CEST",
     province: "Oriental Mindoro",
     municipality: "Pinamalayan",
@@ -447,6 +474,8 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   {
     id: "prj-013",
     name: "Victoria Smart Agriculture Demonstration Farm",
+    description:
+      "Establishment of a smart-agriculture demonstration farm with soil and weather sensors to showcase precision-farming practices to local growers.",
     program: "Agriculture",
     province: "Oriental Mindoro",
     municipality: "Victoria",
@@ -467,6 +496,8 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   {
     id: "prj-014",
     name: "Puerto Galera Coral Reef Rehabilitation Initiative",
+    description:
+      "Rehabilitation of degraded reefs through coral fragment deployment in protected dive sites to restore marine biodiversity and sustain eco-tourism.",
     program: "Coral Restoration",
     province: "Oriental Mindoro",
     municipality: "Puerto Galera",
@@ -487,6 +518,8 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   {
     id: "prj-015",
     name: "Calapan City Innovation Hub (iHub) Expansion",
+    description:
+      "Expansion of the Calapan innovation hub with fabrication and prototyping equipment to nurture startups and student innovators.",
     program: "iHub",
     province: "Oriental Mindoro",
     municipality: "Calapan City",
@@ -508,6 +541,8 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   {
     id: "prj-016",
     name: "San Jose Aquaculture Cold Chain SETUP",
+    description:
+      "Installation of a blast freezer and ice plant to build a cold chain that reduces post-harvest losses for San Jose aquaculture traders.",
     program: "SETUP",
     province: "Occidental Mindoro",
     municipality: "San Jose",
@@ -528,6 +563,8 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   {
     id: "prj-017",
     name: "Rizal Renewable Energy Community Microgrid",
+    description:
+      "Community solar microgrid with battery storage providing reliable electricity to off-grid households in Rizal, Occidental Mindoro.",
     program: "Renewable Energy",
     province: "Occidental Mindoro",
     municipality: "Rizal",
@@ -547,6 +584,8 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   {
     id: "prj-018",
     name: "Abra de Ilog Potable Water Systems Project",
+    description:
+      "Development of potable water sources and distribution lines to deliver safe drinking water to households in Abra de Ilog.",
     program: "Water Projects",
     province: "Occidental Mindoro",
     municipality: "Abra de Ilog",
@@ -566,6 +605,8 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   {
     id: "prj-019",
     name: "Lubang Island STARBOOKS Learning Network",
+    description:
+      "Deployment of multiple STARBOOKS offline STEM library nodes across Lubang Island schools to widen access to science learning.",
     program: "STARBOOKS",
     province: "Occidental Mindoro",
     municipality: "Lubang",
@@ -585,6 +626,8 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   {
     id: "prj-020",
     name: "Sablayan Technology Transfer for Cashew Processors",
+    description:
+      "Transfer of cashew shelling and processing technology to raise the productivity, safety, and product quality of Sablayan cashew processors.",
     program: "Technology Transfer",
     province: "Occidental Mindoro",
     municipality: "Sablayan",
@@ -606,6 +649,8 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   {
     id: "prj-021",
     name: "Gasan Coco Sugar Production SETUP",
+    description:
+      "Provision of coco sap collection and evaporation equipment to enable Gasan producers to manufacture high-value natural coco sugar.",
     program: "SETUP",
     province: "Marinduque",
     municipality: "Gasan",
@@ -625,6 +670,8 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   {
     id: "prj-022",
     name: "Santa Cruz Marine Products Cold Storage (GIA)",
+    description:
+      "Establishment of a cold storage and ice-making facility to preserve marine catch and reduce post-harvest losses for Santa Cruz traders.",
     program: "GIA",
     province: "Marinduque",
     municipality: "Santa Cruz",
@@ -644,6 +691,8 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   {
     id: "prj-023",
     name: "Buenavista Virgin Coconut Oil Health Products",
+    description:
+      "Upgrading of the VCO processing line to meet FDA standards and expand production of premium virgin coconut oil health products.",
     program: "GIA",
     province: "Marinduque",
     municipality: "Buenavista",
@@ -665,6 +714,8 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   {
     id: "prj-024",
     name: "Romblon Marble Craft Technology Transfer",
+    description:
+      "Provision of CNC marble cutting and finishing equipment to improve the precision, output, and product design of Romblon marble craftsmen.",
     program: "Technology Transfer",
     province: "Romblon",
     municipality: "Romblon",
@@ -684,6 +735,8 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   {
     id: "prj-025",
     name: "Cajidiocan Upland Agriculture Support",
+    description:
+      "Distribution of climate-smart farming kits and training to upland farmers in Cajidiocan to raise yields and build climate resilience.",
     program: "Agriculture",
     province: "Romblon",
     municipality: "Cajidiocan",
@@ -703,6 +756,8 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   {
     id: "prj-026",
     name: "Santa Fe Disaster Early Warning Network",
+    description:
+      "Installation of a community-based early warning sensor network to strengthen disaster preparedness and response in Santa Fe.",
     program: "Disaster Resilience",
     province: "Romblon",
     municipality: "Santa Fe",
@@ -722,6 +777,8 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   {
     id: "prj-027",
     name: "Odiongan Food Processing Shared Facility (SETUP)",
+    description:
+      "Establishment of a shared food-processing and packaging facility that Odiongan MSMEs can use to lower costs and standardize product quality.",
     program: "SETUP",
     province: "Romblon",
     municipality: "Odiongan",
@@ -743,6 +800,8 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   {
     id: "prj-028",
     name: "El Nido Sustainable Tourism Innovation Hub",
+    description:
+      "Establishment of a tourism innovation hub offering digital tools and co-working space to support sustainable tourism enterprises in El Nido.",
     program: "Innovation Hubs",
     province: "Palawan",
     municipality: "El Nido",
@@ -762,6 +821,8 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   {
     id: "prj-029",
     name: "Roxas Palawan Seaweed Processing SETUP",
+    description:
+      "Provision of carrageenan drying and milling equipment to add value to seaweed and boost the incomes of Roxas, Palawan farmers.",
     program: "SETUP",
     province: "Palawan",
     municipality: "Roxas",
@@ -781,6 +842,8 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   {
     id: "prj-030",
     name: "Brooke's Point Renewable Energy Livelihood Project",
+    description:
+      "Solar energy systems paired with livelihood support to power enterprises and improve living conditions in off-grid Brooke's Point communities.",
     program: "Renewable Energy",
     province: "Palawan",
     municipality: "Brooke's Point",
@@ -800,6 +863,8 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   {
     id: "prj-031",
     name: "Narra Community Agriculture GIA Program",
+    description:
+      "Provision of rice threshers and solar dryers with training to reduce post-harvest losses and increase farm income in Narra.",
     program: "Agriculture",
     province: "Palawan",
     municipality: "Narra",
@@ -819,6 +884,8 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   {
     id: "prj-032",
     name: "Coron STARBOOKS and Digital Literacy Hub",
+    description:
+      "Establishment of an offline STEM library and digital literacy hub offering coding and computer classes to Coron learners.",
     program: "STARBOOKS",
     province: "Palawan",
     municipality: "Coron",
