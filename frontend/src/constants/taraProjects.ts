@@ -29,11 +29,22 @@ export type Province =
   | "Romblon"
   | "Palawan";
 
+export type TaraSector =
+  | "Food Processing"
+  | "Furniture"
+  | "Gifts / Decors / Handicrafts"
+  | "Metals & Engineering"
+  | "Agriculture / Marine / Aquaculture / Forestry / Livestock"
+  | "Health & Wellness Products"
+  | "ICT"
+  | "Other Regional Industry Priorities";
+
 export type TaraProject = {
   id: string;
   name: string;
   description: string;
   program: TaraProgram;
+  sector: TaraSector;
   province: Province;
   municipality: string;
   barangay: string;
@@ -58,6 +69,21 @@ export const PROVINCES: Province[] = [
   "Romblon",
   "Palawan",
 ];
+
+export const SECTORS: TaraSector[] = [
+  "Food Processing",
+  "Furniture",
+  "Gifts / Decors / Handicrafts",
+  "Metals & Engineering",
+  "Agriculture / Marine / Aquaculture / Forestry / Livestock",
+  "Health & Wellness Products",
+  "ICT",
+  "Other Regional Industry Priorities",
+];
+
+/** Year a project started (derived from its start_date). */
+export const projectYear = (p: TaraProject) =>
+  Number(p.start_date.slice(0, 4));
 
 export const PROGRAMS: TaraProgram[] = [
   "SETUP",
@@ -217,6 +243,7 @@ export const describeProject = (p: TaraProject) =>
 export const MOCK_TARA_PROJECTS: TaraProject[] = [
   {
     id: "prj-001",
+    sector: "Food Processing",
     name: "Calapan Food Processing SETUP Cluster",
     description:
       "Provision of shared food-processing and packaging equipment to a cluster of Calapan MSMEs to raise output, improve product quality, and widen market access.",
@@ -238,6 +265,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-002",
+    sector: "ICT",
     name: "Torrijos STARBOOKS Learning Hub",
     description:
       "Deployment of the DOST STARBOOKS offline science digital library so Torrijos students and teachers can access STEM learning resources even without internet.",
@@ -259,6 +287,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-003",
+    sector: "Agriculture / Marine / Aquaculture / Forestry / Livestock",
     name: "Coron Coral Restoration Pilot",
     description:
       "Pilot coral reef restoration through fragment transplantation across priority dive sites to rehabilitate marine biodiversity and sustain coastal tourism and fisheries.",
@@ -280,6 +309,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-004",
+    sector: "Other Regional Industry Priorities",
     name: "Sablayan Community Water System",
     description:
       "Construction of a community potable water system with new pipelines and reservoirs to deliver safe, reliable water to underserved barangays in Sablayan.",
@@ -301,6 +331,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-005",
+    sector: "Other Regional Industry Priorities",
     name: "Odiongan Renewable Microgrid Demo",
     description:
       "Demonstration solar-plus-storage microgrid delivering stable, clean electricity to off-grid households and enterprises in Odiongan.",
@@ -322,6 +353,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-006",
+    sector: "ICT",
     name: "Puerto Princesa iHub Expansion",
     description:
       "Expansion of the Puerto Princesa innovation hub with prototyping equipment and co-working space to support startups, researchers, and MSMEs.",
@@ -343,6 +375,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-007",
+    sector: "Agriculture / Marine / Aquaculture / Forestry / Livestock",
     name: "Boac CEST Upland Farming Support",
     description:
       "Convergence of S&T interventions delivering climate-smart farming kits, training, and soil health support to upland farming communities in Boac.",
@@ -364,6 +397,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-008",
+    sector: "Other Regional Industry Priorities",
     name: "Mamburao Disaster Early Warning Node",
     description:
       "Installation of automated rain and river-level sensors linked to a community early-warning system to reduce flood risk for Mamburao residents.",
@@ -385,6 +419,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-009",
+    sector: "Agriculture / Marine / Aquaculture / Forestry / Livestock",
     name: "Roxas Seaweed Processing SETUP",
     description:
       "Provision of drying, milling, and packaging equipment to seaweed farmers in Roxas to add value to raw seaweed and increase household income.",
@@ -406,6 +441,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-010",
+    sector: "Other Regional Industry Priorities",
     name: "San Fernando REIINN Satellite Lab",
     description:
       "Establishment of a regional research and innovation satellite laboratory to support local testing, product development, and academe-industry collaboration.",
@@ -429,6 +465,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   // ── Oriental Mindoro ──────────────────────────────────────────────
   {
     id: "prj-011",
+    sector: "Agriculture / Marine / Aquaculture / Forestry / Livestock",
     name: "Naujan Rice Mill Productivity Upgrade (SETUP)",
     description:
       "Acquisition of a modern multi-pass rice mill with GMP training to cut milling losses and improve rice quality for farmer-members in Naujan.",
@@ -451,6 +488,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-012",
+    sector: "Other Regional Industry Priorities",
     name: "Pinamalayan CEST Coastal Community Program",
     description:
       "Integrated S&T package delivering livelihood, potable water, and health interventions to poor coastal barangays in Pinamalayan.",
@@ -473,6 +511,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-013",
+    sector: "Agriculture / Marine / Aquaculture / Forestry / Livestock",
     name: "Victoria Smart Agriculture Demonstration Farm",
     description:
       "Establishment of a smart-agriculture demonstration farm with soil and weather sensors to showcase precision-farming practices to local growers.",
@@ -495,6 +534,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-014",
+    sector: "Agriculture / Marine / Aquaculture / Forestry / Livestock",
     name: "Puerto Galera Coral Reef Rehabilitation Initiative",
     description:
       "Rehabilitation of degraded reefs through coral fragment deployment in protected dive sites to restore marine biodiversity and sustain eco-tourism.",
@@ -517,6 +557,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-015",
+    sector: "ICT",
     name: "Calapan City Innovation Hub (iHub) Expansion",
     description:
       "Expansion of the Calapan innovation hub with fabrication and prototyping equipment to nurture startups and student innovators.",
@@ -540,6 +581,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   // ── Occidental Mindoro ────────────────────────────────────────────
   {
     id: "prj-016",
+    sector: "Agriculture / Marine / Aquaculture / Forestry / Livestock",
     name: "San Jose Aquaculture Cold Chain SETUP",
     description:
       "Installation of a blast freezer and ice plant to build a cold chain that reduces post-harvest losses for San Jose aquaculture traders.",
@@ -562,6 +604,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-017",
+    sector: "Other Regional Industry Priorities",
     name: "Rizal Renewable Energy Community Microgrid",
     description:
       "Community solar microgrid with battery storage providing reliable electricity to off-grid households in Rizal, Occidental Mindoro.",
@@ -583,6 +626,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-018",
+    sector: "Other Regional Industry Priorities",
     name: "Abra de Ilog Potable Water Systems Project",
     description:
       "Development of potable water sources and distribution lines to deliver safe drinking water to households in Abra de Ilog.",
@@ -604,6 +648,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-019",
+    sector: "ICT",
     name: "Lubang Island STARBOOKS Learning Network",
     description:
       "Deployment of multiple STARBOOKS offline STEM library nodes across Lubang Island schools to widen access to science learning.",
@@ -625,6 +670,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-020",
+    sector: "Food Processing",
     name: "Sablayan Technology Transfer for Cashew Processors",
     description:
       "Transfer of cashew shelling and processing technology to raise the productivity, safety, and product quality of Sablayan cashew processors.",
@@ -648,6 +694,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   // ── Marinduque ────────────────────────────────────────────────────
   {
     id: "prj-021",
+    sector: "Food Processing",
     name: "Gasan Coco Sugar Production SETUP",
     description:
       "Provision of coco sap collection and evaporation equipment to enable Gasan producers to manufacture high-value natural coco sugar.",
@@ -669,6 +716,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-022",
+    sector: "Agriculture / Marine / Aquaculture / Forestry / Livestock",
     name: "Santa Cruz Marine Products Cold Storage (GIA)",
     description:
       "Establishment of a cold storage and ice-making facility to preserve marine catch and reduce post-harvest losses for Santa Cruz traders.",
@@ -690,6 +738,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-023",
+    sector: "Health & Wellness Products",
     name: "Buenavista Virgin Coconut Oil Health Products",
     description:
       "Upgrading of the VCO processing line to meet FDA standards and expand production of premium virgin coconut oil health products.",
@@ -713,6 +762,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   // ── Romblon ───────────────────────────────────────────────────────
   {
     id: "prj-024",
+    sector: "Gifts / Decors / Handicrafts",
     name: "Romblon Marble Craft Technology Transfer",
     description:
       "Provision of CNC marble cutting and finishing equipment to improve the precision, output, and product design of Romblon marble craftsmen.",
@@ -734,6 +784,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-025",
+    sector: "Agriculture / Marine / Aquaculture / Forestry / Livestock",
     name: "Cajidiocan Upland Agriculture Support",
     description:
       "Distribution of climate-smart farming kits and training to upland farmers in Cajidiocan to raise yields and build climate resilience.",
@@ -755,6 +806,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-026",
+    sector: "Other Regional Industry Priorities",
     name: "Santa Fe Disaster Early Warning Network",
     description:
       "Installation of a community-based early warning sensor network to strengthen disaster preparedness and response in Santa Fe.",
@@ -776,6 +828,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-027",
+    sector: "Food Processing",
     name: "Odiongan Food Processing Shared Facility (SETUP)",
     description:
       "Establishment of a shared food-processing and packaging facility that Odiongan MSMEs can use to lower costs and standardize product quality.",
@@ -799,6 +852,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   // ── Palawan ───────────────────────────────────────────────────────
   {
     id: "prj-028",
+    sector: "Other Regional Industry Priorities",
     name: "El Nido Sustainable Tourism Innovation Hub",
     description:
       "Establishment of a tourism innovation hub offering digital tools and co-working space to support sustainable tourism enterprises in El Nido.",
@@ -820,6 +874,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-029",
+    sector: "Agriculture / Marine / Aquaculture / Forestry / Livestock",
     name: "Roxas Palawan Seaweed Processing SETUP",
     description:
       "Provision of carrageenan drying and milling equipment to add value to seaweed and boost the incomes of Roxas, Palawan farmers.",
@@ -841,6 +896,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-030",
+    sector: "Other Regional Industry Priorities",
     name: "Brooke's Point Renewable Energy Livelihood Project",
     description:
       "Solar energy systems paired with livelihood support to power enterprises and improve living conditions in off-grid Brooke's Point communities.",
@@ -862,6 +918,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-031",
+    sector: "Agriculture / Marine / Aquaculture / Forestry / Livestock",
     name: "Narra Community Agriculture GIA Program",
     description:
       "Provision of rice threshers and solar dryers with training to reduce post-harvest losses and increase farm income in Narra.",
@@ -883,6 +940,7 @@ export const MOCK_TARA_PROJECTS: TaraProject[] = [
   },
   {
     id: "prj-032",
+    sector: "ICT",
     name: "Coron STARBOOKS and Digital Literacy Hub",
     description:
       "Establishment of an offline STEM library and digital literacy hub offering coding and computer classes to Coron learners.",

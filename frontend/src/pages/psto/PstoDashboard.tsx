@@ -80,6 +80,8 @@ const PROGRESS_FROM_STATUS: Record<ProjectStatus, number> = {
 const toTaraProject = (p: ImpressionProject): TaraProject => {
   const status = STATUS_FROM_IMPRESSION[p.status];
   return {
+    description: p.description,
+    sector: p.sector,
     id: p.code,
     name: p.title,
     program: PROGRAM_FROM_TYPE[p.type],
@@ -332,7 +334,10 @@ const PstoDashboard = () => {
               to="/psto/programs"
               className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-950/80 px-3 py-2 text-sm font-medium text-emerald-100 backdrop-blur-md sm:px-4"
             >
-              <HiClipboardDocumentList className="h-4 w-4 sm:hidden" aria-hidden />
+              <HiClipboardDocumentList
+                className="h-4 w-4 sm:hidden"
+                aria-hidden
+              />
               <span className="hidden sm:inline">Project list</span>
             </Link>
           </div>
@@ -378,7 +383,10 @@ const PstoDashboard = () => {
                 </button>
               </div>
               <p className="mt-2 flex items-center gap-1.5 text-[11px] text-slate-400">
-                <HiMapPin className="h-3.5 w-3.5 text-emerald-400" aria-hidden />
+                <HiMapPin
+                  className="h-3.5 w-3.5 text-emerald-400"
+                  aria-hidden
+                />
                 {filtered.length} result{filtered.length === 1 ? "" : "s"} in{" "}
                 {municipalityFilter === "all"
                   ? "Marinduque"
@@ -706,11 +714,15 @@ const PstoDashboard = () => {
               </div>
               <div className="rounded-xl border border-slate-700/70 bg-slate-950/50 p-3">
                 <p className="text-slate-500">Status</p>
-                <p className="mt-1 font-semibold text-white">{viewing.status}</p>
+                <p className="mt-1 font-semibold text-white">
+                  {viewing.status}
+                </p>
               </div>
               <div className="rounded-xl border border-slate-700/70 bg-slate-950/50 p-3">
                 <p className="text-slate-500">Sector</p>
-                <p className="mt-1 font-semibold text-white">{viewing.sector}</p>
+                <p className="mt-1 font-semibold text-white">
+                  {viewing.sector}
+                </p>
               </div>
               <div className="rounded-xl border border-slate-700/70 bg-slate-950/50 p-3">
                 <p className="text-slate-500">Project cost</p>
@@ -739,7 +751,10 @@ const PstoDashboard = () => {
             >
               <HiPaperAirplane className="h-5 w-5" aria-hidden />
               Google Maps directions
-              <HiArrowTopRightOnSquare className="h-4 w-4 opacity-70" aria-hidden />
+              <HiArrowTopRightOnSquare
+                className="h-4 w-4 opacity-70"
+                aria-hidden
+              />
             </button>
           </div>
         </div>

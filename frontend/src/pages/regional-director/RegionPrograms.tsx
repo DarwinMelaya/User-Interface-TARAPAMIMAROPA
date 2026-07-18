@@ -22,6 +22,7 @@ import {
   formatCompact,
   formatPeso,
   projectImage,
+  projectYear,
   summarizeProjects,
   type ProjectStatus,
   type Province,
@@ -469,52 +470,88 @@ const RegionPrograms = () => {
             {scopedProjects.length}
           </span>
         </div>
-        <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
-          {scopedProjects.length === 0 ? (
-            <p className="rounded-2xl border border-slate-800/80 bg-slate-900/70 p-6 text-center text-sm text-slate-500 sm:col-span-2 xl:col-span-3">
-              No projects in this province yet.
-            </p>
-          ) : null}
-          {scopedProjects.map((project) => {
-            const meta = PROGRAM_META[project.program];
-            const status = STATUS_META[project.status];
-            return (
-              <article
-                key={project.id}
-                onClick={() => setViewing(project)}
-                className="flex cursor-pointer gap-3 rounded-2xl border border-slate-800/80 bg-slate-900/70 p-3.5 backdrop-blur transition hover:border-cyan-500/40"
-              >
-                <div className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-xl bg-slate-950/70 ring-1 ring-slate-700/60">
-                  <span
-                    className={`text-[9px] font-extrabold uppercase ${meta.accent}`}
+        <div className="mt-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-slate-400">
+            Total No. of Records :{" "}
+            <span className="font-bold text-cyan-300">
+              {scopedProjects.length}
+            </span>
+          </p>
+          <p className="text-sm text-slate-400">
+            Total Project Cost :{" "}
+            <span className="font-bold text-cyan-300">
+              {formatPeso(scopedProjects.reduce((s, p) => s + p.budget, 0))}
+            </span>
+          </p>
+        </div>
+
+        <div className="mt-2 overflow-x-auto rounded-2xl border border-slate-800/80 bg-slate-900/70 backdrop-blur [-webkit-overflow-scrolling:touch]">
+          <table className="w-full min-w-[820px] border-collapse text-xs">
+            <thead>
+              <tr className="bg-slate-950/60 text-left uppercase tracking-wide text-slate-500">
+                <th className="px-3 py-2.5 font-bold">#</th>
+                <th className="px-3 py-2.5 font-bold">Project</th>
+                <th className="px-3 py-2.5 font-bold">Type</th>
+                <th className="px-3 py-2.5 font-bold">Year</th>
+                <th className="px-3 py-2.5 font-bold">Sector</th>
+                <th className="px-3 py-2.5 font-bold">Municipality</th>
+                <th className="px-3 py-2.5 font-bold">Status</th>
+                <th className="px-3 py-2.5 text-right font-bold">Project Cost</th>
+              </tr>
+            </thead>
+            <tbody>
+              {scopedProjects.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={8}
+                    className="px-4 py-10 text-center text-sm text-slate-500"
                   >
-                    {meta.short}
-                  </span>
-                  <span className="mt-0.5 text-[11px] font-bold text-white">
-                    {project.progress}%
-                  </span>
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-[9px] font-semibold ring-1 ${status.className}`}
-                    >
-                      {status.label}
-                    </span>
-                    <span className="text-[11px] font-bold text-cyan-200">
-                      {formatCompact(project.budget)}
-                    </span>
-                  </div>
-                  <p className="mt-1 line-clamp-1 text-sm font-semibold text-white">
-                    {project.name}
-                  </p>
-                  <p className="mt-0.5 line-clamp-1 text-[11px] text-slate-400">
-                    {project.municipality}, {project.province}
-                  </p>
-                </div>
-              </article>
-            );
-          })}
+                    No projects in this province yet.
+                  </td>
+                </tr>
+              ) : null}
+              {scopedProjects.map((project, idx) => {
+                const status = STATUS_META[project.status];
+                return (
+                  <tr
+                    key={project.id}
+                    onClick={() => setViewing(project)}
+                    className="cursor-pointer border-t border-slate-800/60 align-top transition hover:bg-slate-800/40"
+                  >
+                    <td className="px-3 py-2.5 text-slate-500">{idx + 1}</td>
+                    <td className="max-w-[360px] px-3 py-2.5">
+                      <p className="font-medium text-white">{project.name}</p>
+                      <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500">
+                        {project.description}
+                      </p>
+                    </td>
+                    <td className="px-3 py-2.5 text-slate-400">
+                      {project.program}
+                    </td>
+                    <td className="px-3 py-2.5 text-slate-400">
+                      {projectYear(project)}
+                    </td>
+                    <td className="max-w-[160px] px-3 py-2.5 text-slate-400">
+                      {project.sector}
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-2.5 text-slate-300">
+                      {project.municipality}
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <span
+                        className={`whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${status.className}`}
+                      >
+                        {status.label}
+                      </span>
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-2.5 text-right font-semibold text-cyan-200">
+                      {formatPeso(project.budget)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -563,18 +600,26 @@ const RegionPrograms = () => {
             <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
               <div>
                 <dt className="text-[11px] uppercase tracking-wide text-slate-500">
-                  Status
+                  Type
                 </dt>
                 <dd className="mt-0.5 font-semibold text-white">
-                  {STATUS_META[viewing.status].label}
+                  {viewing.program}
                 </dd>
               </div>
               <div>
                 <dt className="text-[11px] uppercase tracking-wide text-slate-500">
-                  Progress
+                  Year
                 </dt>
-                <dd className="mt-0.5 font-semibold text-cyan-300">
-                  {viewing.progress}%
+                <dd className="mt-0.5 font-semibold text-white">
+                  {projectYear(viewing)}
+                </dd>
+              </div>
+              <div className="col-span-2">
+                <dt className="text-[11px] uppercase tracking-wide text-slate-500">
+                  Sector
+                </dt>
+                <dd className="mt-0.5 font-semibold text-white">
+                  {viewing.sector}
                 </dd>
               </div>
               <div>
@@ -587,50 +632,18 @@ const RegionPrograms = () => {
               </div>
               <div>
                 <dt className="text-[11px] uppercase tracking-wide text-slate-500">
-                  Barangay
+                  Status
                 </dt>
                 <dd className="mt-0.5 font-semibold text-white">
-                  {viewing.barangay}
+                  {STATUS_META[viewing.status].label}
                 </dd>
               </div>
-              <div>
+              <div className="col-span-2">
                 <dt className="text-[11px] uppercase tracking-wide text-slate-500">
-                  Budget
+                  Project Cost
                 </dt>
                 <dd className="mt-0.5 font-bold text-cyan-300">
                   {formatPeso(viewing.budget)}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-[11px] uppercase tracking-wide text-slate-500">
-                  Beneficiaries
-                </dt>
-                <dd className="mt-0.5 font-semibold text-white">
-                  {formatCompact(viewing.beneficiaries)}
-                </dd>
-              </div>
-              <div className="col-span-2">
-                <dt className="text-[11px] uppercase tracking-wide text-slate-500">
-                  Partner agency
-                </dt>
-                <dd className="mt-0.5 font-semibold text-white">
-                  {viewing.partner_agency}
-                </dd>
-              </div>
-              <div className="col-span-2">
-                <dt className="text-[11px] uppercase tracking-wide text-slate-500">
-                  Latest accomplishment
-                </dt>
-                <dd className="mt-0.5 text-slate-200">
-                  {viewing.latest_accomplishment}
-                </dd>
-              </div>
-              <div className="col-span-2">
-                <dt className="text-[11px] uppercase tracking-wide text-slate-500">
-                  Coordinates
-                </dt>
-                <dd className="mt-0.5 font-mono text-xs text-slate-300">
-                  {viewing.latitude.toFixed(5)}, {viewing.longitude.toFixed(5)}
                 </dd>
               </div>
             </dl>

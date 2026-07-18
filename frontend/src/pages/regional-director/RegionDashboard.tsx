@@ -45,6 +45,7 @@ import {
   formatCompact,
   formatPeso,
   projectImage,
+  projectYear,
   summarizeProjects,
   type ProjectStatus,
   type Province,
@@ -1358,8 +1359,18 @@ const RegionDashboard = () => {
 
             <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
               <div className="rounded-xl border border-slate-700/70 bg-slate-950/50 p-3">
-                <p className="text-slate-500">Province</p>
-                <p className="mt-1 font-semibold text-white">{viewing.province}</p>
+                <p className="text-slate-500">Type</p>
+                <p className="mt-1 font-semibold text-white">{viewing.program}</p>
+              </div>
+              <div className="rounded-xl border border-slate-700/70 bg-slate-950/50 p-3">
+                <p className="text-slate-500">Year</p>
+                <p className="mt-1 font-semibold text-white">
+                  {projectYear(viewing)}
+                </p>
+              </div>
+              <div className="col-span-2 rounded-xl border border-slate-700/70 bg-slate-950/50 p-3">
+                <p className="text-slate-500">Sector</p>
+                <p className="mt-1 font-semibold text-white">{viewing.sector}</p>
               </div>
               <div className="rounded-xl border border-slate-700/70 bg-slate-950/50 p-3">
                 <p className="text-slate-500">Municipality</p>
@@ -1368,67 +1379,17 @@ const RegionDashboard = () => {
                 </p>
               </div>
               <div className="rounded-xl border border-slate-700/70 bg-slate-950/50 p-3">
-                <p className="text-slate-500">Barangay</p>
-                <p className="mt-1 font-semibold text-white">{viewing.barangay}</p>
-              </div>
-              <div className="rounded-xl border border-slate-700/70 bg-slate-950/50 p-3">
                 <p className="text-slate-500">Status</p>
                 <p className="mt-1 font-semibold text-white">
                   {STATUS_META[viewing.status].label}
                 </p>
               </div>
-              <div className="rounded-xl border border-slate-700/70 bg-slate-950/50 p-3">
-                <p className="text-slate-500">Budget</p>
+              <div className="col-span-2 rounded-xl border border-slate-700/70 bg-slate-950/50 p-3">
+                <p className="text-slate-500">Project Cost</p>
                 <p className="mt-1 font-semibold text-cyan-200">
                   {formatPeso(viewing.budget)}
                 </p>
               </div>
-              <div className="rounded-xl border border-slate-700/70 bg-slate-950/50 p-3">
-                <p className="text-slate-500">Funding source</p>
-                <p className="mt-1 font-semibold text-white">
-                  {viewing.funding_source}
-                </p>
-              </div>
-              <div className="rounded-xl border border-slate-700/70 bg-slate-950/50 p-3">
-                <p className="text-slate-500">Beneficiaries</p>
-                <p className="mt-1 font-semibold text-white">
-                  {formatCompact(viewing.beneficiaries)}
-                </p>
-              </div>
-              <div className="rounded-xl border border-slate-700/70 bg-slate-950/50 p-3">
-                <p className="text-slate-500">GPS</p>
-                <p className="mt-1 font-semibold text-white">
-                  {viewing.latitude.toFixed(4)}, {viewing.longitude.toFixed(4)}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-4">
-              <div className="mb-1 flex items-center justify-between text-xs">
-                <span className="text-slate-400">Progress</span>
-                <span className="font-bold text-cyan-300">{viewing.progress}%</span>
-              </div>
-              <div className="h-2 overflow-hidden rounded-full bg-slate-800">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-blue-500"
-                  style={{ width: `${viewing.progress}%` }}
-                />
-              </div>
-              <p className="mt-2 text-[11px] text-slate-500">
-                {viewing.start_date} → {viewing.end_date}
-              </p>
-            </div>
-
-            <div className="mt-4 rounded-xl border border-slate-700/70 bg-slate-950/50 p-3">
-              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
-                Latest accomplishment
-              </p>
-              <p className="mt-1.5 text-sm text-slate-200">
-                {viewing.latest_accomplishment}
-              </p>
-              <p className="mt-2 text-xs text-slate-500">
-                Partner: {viewing.partner_agency}
-              </p>
             </div>
 
             <div className="mt-4 flex flex-col gap-2 sm:flex-row">
