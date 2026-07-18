@@ -388,6 +388,7 @@ const RegionDashboard = () => {
   const [baseLayer, setBaseLayer] = useState<MapBaseLayer>("satellite");
   const [viewMode, setViewMode] = useState<MapViewMode>("2d");
   const [graphsExpanded, setGraphsExpanded] = useState(false);
+  const [feedExpanded, setFeedExpanded] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
@@ -1054,59 +1055,77 @@ const RegionDashboard = () => {
 
         <div
           className={[
-            "pointer-events-auto flex w-full flex-col overflow-hidden rounded-2xl border border-cyan-400/25 bg-slate-900/95 shadow-[0_8px_48px_rgba(0,0,0,0.5),0_0_24px_rgba(34,211,238,0.1)] backdrop-blur-xl",
+            "pointer-events-auto flex w-full flex-col overflow-hidden rounded-2xl border border-cyan-400/25 bg-slate-900/95 shadow-[0_8px_48px_rgba(0,0,0,0.5),0_0_24px_rgba(34,211,238,0.1)] backdrop-blur-xl transition-all duration-300",
             mobileSheet === "feed" ? "max-h-[min(58vh,460px)]" : "hidden",
-            "lg:flex lg:max-h-[min(520px,62vh)] lg:max-w-[min(420px,calc(100%-2rem))]",
+            "lg:flex lg:max-w-[min(420px,calc(100%-2rem))]",
+            feedExpanded ? "lg:max-h-[min(520px,62vh)]" : "lg:max-h-14",
           ].join(" ")}
         >
           <div className="border-b border-cyan-900/50 px-3 py-3 sm:px-4">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-cyan-200/90">
-                Project feed
-              </p>
-              <span className="rounded-full bg-cyan-500/20 px-2 py-0.5 text-[10px] font-bold text-cyan-300">
-                {filteredProjects.length}
-              </span>
-            </div>
-            <div className="mt-2 flex flex-wrap gap-1">
               <button
                 type="button"
-                onClick={() => setStatusFilter("all")}
-                className={[
-                  "rounded-full px-2.5 py-1 text-[10px] font-semibold",
-                  statusFilter === "all"
-                    ? "bg-cyan-500 text-white"
-                    : "border border-slate-700/80 text-slate-400",
-                ].join(" ")}
+                onClick={() => setFeedExpanded((v) => !v)}
+                className="flex min-w-0 flex-1 items-center gap-2 text-left"
               >
-                All status
+                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-cyan-200/90">
+                  Project feed
+                </p>
+                <span className="rounded-full bg-cyan-500/20 px-2 py-0.5 text-[10px] font-bold text-cyan-300">
+                  {filteredProjects.length}
+                </span>
               </button>
-              {(
-                [
-                  "ongoing",
-                  "completed",
-                  "delayed",
-                  "on_hold",
-                  "planning",
-                ] as ProjectStatus[]
-              ).map((status) => (
+              <button
+                type="button"
+                onClick={() => setFeedExpanded((v) => !v)}
+                className="rounded-lg border border-slate-700/80 px-2 py-1 text-[10px] font-semibold text-slate-400 transition hover:text-white"
+                aria-expanded={feedExpanded}
+              >
+                {feedExpanded ? "Collapse" : "Expand"}
+              </button>
+            </div>
+            {feedExpanded ? (
+              <div className="mt-2 flex flex-wrap gap-1">
                 <button
-                  key={status}
                   type="button"
-                  onClick={() => setStatusFilter(status)}
+                  onClick={() => setStatusFilter("all")}
                   className={[
                     "rounded-full px-2.5 py-1 text-[10px] font-semibold",
-                    statusFilter === status
+                    statusFilter === "all"
                       ? "bg-cyan-500 text-white"
                       : "border border-slate-700/80 text-slate-400",
                   ].join(" ")}
                 >
-                  {STATUS_META[status].label}
+                  All status
                 </button>
-              ))}
-            </div>
+                {(
+                  [
+                    "ongoing",
+                    "completed",
+                    "delayed",
+                    "on_hold",
+                    "planning",
+                  ] as ProjectStatus[]
+                ).map((status) => (
+                  <button
+                    key={status}
+                    type="button"
+                    onClick={() => setStatusFilter(status)}
+                    className={[
+                      "rounded-full px-2.5 py-1 text-[10px] font-semibold",
+                      statusFilter === status
+                        ? "bg-cyan-500 text-white"
+                        : "border border-slate-700/80 text-slate-400",
+                    ].join(" ")}
+                  >
+                    {STATUS_META[status].label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
 
+          {feedExpanded ? (
           <ul className="flex-1 overflow-y-auto overscroll-contain p-2 sm:p-3 [-webkit-overflow-scrolling:touch] [scrollbar-width:thin]">
             {filteredProjects.length === 0 ? (
               <li className="flex flex-col items-center px-4 py-10 text-center">
@@ -1166,6 +1185,7 @@ const RegionDashboard = () => {
               );
             })}
           </ul>
+          ) : null}
         </div>
       </div>
 
