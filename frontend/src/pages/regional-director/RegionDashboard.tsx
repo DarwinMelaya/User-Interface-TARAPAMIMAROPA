@@ -8,6 +8,8 @@ import {
   HiBuildingOffice2,
   HiChartBar,
   HiClock,
+  HiDocumentArrowDown,
+  HiDocumentText,
   HiExclamationTriangle,
   HiFunnel,
   HiLightBulb,
@@ -17,9 +19,11 @@ import {
   HiCube,
   HiPaperAirplane,
   HiPauseCircle,
+  HiPrinter,
   HiSignal,
   HiSparkles,
   HiSquares2X2,
+  HiTableCells,
   HiUserGroup,
   HiXMark,
 } from "react-icons/hi2";
@@ -184,6 +188,192 @@ const openGoogleDirections = (
   window.open(url.toString(), "_blank", "noopener,noreferrer");
 };
 
+type ReportFilters = {
+  province: Province | "all";
+  program: TaraProgram | "all";
+  status: ProjectStatus | "all";
+  search: string;
+};
+
+const REPORT_COLUMNS: { key: keyof TaraProject; label: string }[] = [
+  { key: "id", label: "ID" },
+  { key: "name", label: "Project" },
+  { key: "program", label: "Program" },
+  { key: "province", label: "Province" },
+  { key: "municipality", label: "Municipality" },
+  { key: "barangay", label: "Barangay" },
+  { key: "status", label: "Status" },
+  { key: "progress", label: "Progress %" },
+  { key: "budget", label: "Budget (PHP)" },
+  { key: "funding_source", label: "Funding source" },
+  { key: "beneficiaries", label: "Beneficiaries" },
+  { key: "partner_agency", label: "Partner agency" },
+  { key: "start_date", label: "Start" },
+  { key: "end_date", label: "End" },
+  { key: "latest_accomplishment", label: "Latest accomplishment" },
+];
+
+const describeFilters = (filters: ReportFilters): string => {
+  const parts: string[] = [];
+  if (filters.province !== "all") parts.push(`Province: ${filters.province}`);
+  if (filters.program !== "all") parts.push(`Program: ${filters.program}`);
+  if (filters.status !== "all")
+    parts.push(`Status: ${STATUS_META[filters.status].label}`);
+  if (filters.search.trim()) parts.push(`Search: "${filters.search.trim()}"`);
+  return parts.length ? parts.join(" · ") : "All projects (no filters)";
+};
+
+const escapeCsv = (value: string | number): string => {
+  const str = String(value ?? "");
+  return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
+};
+
+const downloadCsvReport = (
+  projects: TaraProject[],
+  filters: ReportFilters,
+) => {
+  const stamp = new Date();
+  const headerLines = [
+    `TARA PAMIMAROPA — Project Report`,
+    `Generated: ${stamp.toLocaleString("en-PH")}`,
+    `Scope: ${describeFilters(filters)}`,
+    `Projects: ${projects.length}`,
+    "",
+  ].map((line) => escapeCsv(line));
+
+  const header = REPORT_COLUMNS.map((c) => escapeCsv(c.label)).join(",");
+  const rows = projects.map((p) =>
+    REPORT_COLUMNS.map((c) => escapeCsv(p[c.key] as string | number)).join(","),
+  );
+
+  const csv = [...headerLines, header, ...rows].join("\r\n");
+  const blob = new Blob(["\ufeff" + csv], {
+    type: "text/csv;charset=utf-8;",
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `tara-report-${stamp.toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
+const countBy = <T extends string>(
+  projects: TaraProject[],
+  pick: (p: TaraProject) => T,
+): { key: T; count: number }[] => {
+  const map = new Map<T, number>();
+  projects.forEach((p) => {
+    const k = pick(p);
+    map.set(k, (map.get(k) ?? 0) + 1);
+  });
+  return [...map.entries()]
+    .map(([key, count]) => ({ key, count }))
+    .sort((a, b) => b.count - a.count);
+};
+
+const printReport = (projects: TaraProject[], filters: ReportFilters) => {
+  const stamp = new Date();
+  const s = summarizeProjects(projects);
+  const esc = (v: string | number) =>
+    String(v ?? "").replace(
+      /[&<>]/g,
+      (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c] as string,
+    );
+
+  const byStatus = countBy(projects, (p) => STATUS_META[p.status].label);
+  const byProgram = countBy(projects, (p) => p.program);
+  const byProvince = countBy(projects, (p) => p.province);
+
+  const chip = (rows: { key: string; count: number }[]) =>
+    rows
+      .map(
+        (r) =>
+          `<span class="chip"><b>${esc(r.key)}</b> ${r.count}</span>`,
+      )
+      .join("");
+
+  const tableRows = projects
+    .map(
+      (p) => `<tr>
+        <td>${esc(p.name)}</td>
+        <td>${esc(p.program)}</td>
+        <td>${esc(p.province)}<br><span class="muted">${esc(p.municipality)}, ${esc(p.barangay)}</span></td>
+        <td>${esc(STATUS_META[p.status].label)}</td>
+        <td class="num">${p.progress}%</td>
+        <td class="num">${esc(formatPeso(p.budget))}</td>
+        <td class="num">${esc(formatCompact(p.beneficiaries))}</td>
+        <td>${esc(p.end_date)}</td>
+      </tr>`,
+    )
+    .join("");
+
+  const html = `<!doctype html><html><head><meta charset="utf-8" />
+    <title>TARA PAMIMAROPA Report</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { font-family: "Segoe UI", Arial, sans-serif; color: #0f172a; margin: 32px; }
+      h1 { margin: 0 0 2px; font-size: 22px; }
+      .sub { color: #475569; font-size: 12px; margin-bottom: 2px; }
+      .scope { color: #0369a1; font-size: 12px; font-weight: 600; margin: 6px 0 18px; }
+      .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 18px; }
+      .card { border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; }
+      .card .label { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: #64748b; }
+      .card .value { font-size: 18px; font-weight: 700; margin-top: 2px; }
+      .section-title { font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: #334155; margin: 16px 0 6px; }
+      .chip { display: inline-block; border: 1px solid #e2e8f0; border-radius: 999px; padding: 3px 10px; margin: 0 6px 6px 0; font-size: 11px; }
+      table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 11px; }
+      th, td { border-bottom: 1px solid #e2e8f0; padding: 6px 8px; text-align: left; vertical-align: top; }
+      th { background: #f1f5f9; text-transform: uppercase; font-size: 10px; letter-spacing: .05em; color: #475569; }
+      td.num { text-align: right; white-space: nowrap; }
+      .muted { color: #94a3b8; font-size: 10px; }
+      .foot { margin-top: 20px; font-size: 10px; color: #94a3b8; }
+      @media print { body { margin: 12mm; } .cards { grid-template-columns: repeat(4, 1fr); } }
+    </style></head><body>
+    <h1>TARA PAMIMAROPA — Project Report</h1>
+    <div class="sub">Tracking of Accomplishments and Results of Activities and Programs · MIMAROPA</div>
+    <div class="sub">Generated ${esc(stamp.toLocaleString("en-PH"))}</div>
+    <div class="scope">Scope: ${esc(describeFilters(filters))}</div>
+
+    <div class="cards">
+      <div class="card"><div class="label">Total projects</div><div class="value">${s.total}</div></div>
+      <div class="card"><div class="label">Active</div><div class="value">${s.active}</div></div>
+      <div class="card"><div class="label">Completed</div><div class="value">${s.completed}</div></div>
+      <div class="card"><div class="label">Delayed / On hold</div><div class="value">${s.delayed} / ${s.onHold}</div></div>
+      <div class="card"><div class="label">Beneficiaries</div><div class="value">${esc(formatCompact(s.beneficiaries))}</div></div>
+      <div class="card"><div class="label">Funding released</div><div class="value">${esc(formatPeso(s.funding))}</div></div>
+      <div class="card"><div class="label">Funding utilized</div><div class="value">${esc(formatPeso(s.utilized))}</div></div>
+      <div class="card"><div class="label">Municipalities</div><div class="value">${s.municipalities}</div></div>
+    </div>
+
+    <div class="section-title">By status</div><div>${chip(byStatus)}</div>
+    <div class="section-title">By program</div><div>${chip(byProgram)}</div>
+    <div class="section-title">By province</div><div>${chip(byProvince)}</div>
+
+    <div class="section-title">Project detail (${projects.length})</div>
+    <table>
+      <thead><tr>
+        <th>Project</th><th>Program</th><th>Location</th><th>Status</th>
+        <th>Progress</th><th>Budget</th><th>Beneficiaries</th><th>End</th>
+      </tr></thead>
+      <tbody>${tableRows || `<tr><td colspan="8" class="muted">No projects match the current filters.</td></tr>`}</tbody>
+    </table>
+
+    <div class="foot">DOST-MIMAROPA · TARA PAMIMAROPA command map export.</div>
+  </body></html>`;
+
+  const win = window.open("", "_blank", "noopener,noreferrer,width=1024,height=768");
+  if (!win) return false;
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  setTimeout(() => win.print(), 400);
+  return true;
+};
+
 const RegionDashboard = () => {
   const [projects] = useState<TaraProject[]>(MOCK_TARA_PROJECTS);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -192,22 +382,18 @@ const RegionDashboard = () => {
   const [programFilter, setProgramFilter] = useState<TaraProgram | "all">("all");
   const [statusFilter, setStatusFilter] = useState<ProjectStatus | "all">("all");
   const [search, setSearch] = useState("");
-  const [feedExpanded, setFeedExpanded] = useState(() =>
-    typeof window !== "undefined"
-      ? window.matchMedia("(min-width: 1024px)").matches
-      : false,
-  );
+  const [feedExpanded, setFeedExpanded] = useState(false);
   const [mobileSheet, setMobileSheet] = useState<
     "stats" | "feed" | "ai" | "graphs" | null
   >(null);
   const [baseLayer, setBaseLayer] = useState<MapBaseLayer>("satellite");
   const [viewMode, setViewMode] = useState<MapViewMode>("2d");
-  const [graphsExpanded, setGraphsExpanded] = useState(() =>
-    typeof window !== "undefined"
-      ? window.matchMedia("(min-width: 1024px)").matches
-      : true,
-  );
+  const [graphsExpanded, setGraphsExpanded] = useState(false);
+  const [statsExpanded, setStatsExpanded] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportError, setReportError] = useState("");
   const [insightIndex, setInsightIndex] = useState(0);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const [locateLoading, setLocateLoading] = useState(false);
@@ -256,6 +442,29 @@ const RegionDashboard = () => {
     setProgramFilter("all");
     setStatusFilter("all");
     setSearch("");
+  };
+
+  const reportFilters: ReportFilters = {
+    province: provinceFilter,
+    program: programFilter,
+    status: statusFilter,
+    search,
+  };
+
+  const handleDownloadCsv = () => {
+    setReportError("");
+    downloadCsvReport(filteredProjects, reportFilters);
+  };
+
+  const handlePrintReport = () => {
+    const ok = printReport(filteredProjects, reportFilters);
+    if (!ok) {
+      setReportError(
+        "Popup blocked. Allow popups for this site to open the printable report.",
+      );
+      return;
+    }
+    setReportError("");
   };
 
   const hasFilters =
@@ -378,7 +587,59 @@ const RegionDashboard = () => {
             </p>
           </div>
 
-          <div className="-mx-3 flex snap-x items-center gap-2 overflow-x-auto px-3 pb-1 [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            <div className="relative shrink-0">
+              <HiMapPin
+                className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-cyan-300"
+                aria-hidden
+              />
+              <select
+                value={provinceFilter}
+                onChange={(e) =>
+                  setProvinceFilter(e.target.value as Province | "all")
+                }
+                aria-label="Filter by province"
+                className={[
+                  "cursor-pointer appearance-none rounded-xl border bg-slate-900/90 py-2 pl-8 pr-8 text-sm font-semibold text-white backdrop-blur-md outline-none transition",
+                  provinceFilter !== "all"
+                    ? "border-cyan-400/60 shadow-[0_0_18px_rgba(34,211,238,0.25)]"
+                    : "border-slate-600/60 hover:border-cyan-500/40",
+                ].join(" ")}
+              >
+                <option value="all">All provinces</option>
+                {PROVINCES.map((province) => (
+                  <option key={province} value={province}>
+                    {province}
+                  </option>
+                ))}
+              </select>
+              <svg
+                className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                aria-hidden
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSearchOpen((v) => !v)}
+              className={[
+                "inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold backdrop-blur-md transition",
+                searchOpen
+                  ? "border-cyan-400/60 bg-cyan-500/20 text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.28)]"
+                  : "border-slate-600/60 bg-slate-900/90 text-slate-200 hover:border-cyan-500/40",
+              ].join(" ")}
+              aria-pressed={searchOpen}
+            >
+              <HiMagnifyingGlass className="h-4 w-4" aria-hidden />
+              <span className="hidden sm:inline">Search</span>
+            </button>
             <div className="hidden shrink-0 rounded-xl border border-emerald-500/30 bg-slate-900/90 px-3 py-2 backdrop-blur-md sm:block">
               <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-200/80">
                 System
@@ -478,6 +739,17 @@ const RegionDashboard = () => {
               <HiSparkles className="h-4 w-4" aria-hidden />
               <span className="hidden sm:inline">AI chat</span>
             </button>
+            <button
+              type="button"
+              onClick={() => {
+                setReportError("");
+                setReportOpen(true);
+              }}
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/15 px-3 py-2 text-sm font-semibold text-amber-100 backdrop-blur-md transition hover:border-amber-400/60"
+            >
+              <HiDocumentArrowDown className="h-4 w-4" aria-hidden />
+              <span className="hidden sm:inline">Report</span>
+            </button>
             <Link
               to="/regional-director/programs"
               className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-blue-500/30 bg-blue-950/80 px-3 py-2 text-sm font-medium text-blue-100 backdrop-blur-md sm:px-4"
@@ -518,6 +790,95 @@ const RegionDashboard = () => {
           </button>
         </div>
       </header>
+
+      {searchOpen ? (
+        <div className="pointer-events-auto absolute inset-0 z-40 flex items-start justify-center p-3 pt-24 sm:pt-28">
+          <button
+            type="button"
+            className="absolute inset-0 cursor-default bg-slate-950/40 backdrop-blur-[2px]"
+            onClick={() => setSearchOpen(false)}
+            aria-label="Close search"
+          />
+          <div className="relative w-full max-w-lg overflow-hidden rounded-2xl border border-cyan-400/30 bg-slate-900/95 shadow-[0_16px_60px_rgba(0,0,0,0.6),0_0_30px_rgba(34,211,238,0.12)] backdrop-blur-xl">
+            <div className="border-b border-cyan-900/50 p-3">
+              <div className="relative">
+                <HiMagnifyingGlass
+                  className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-cyan-300"
+                  aria-hidden
+                />
+                <input
+                  type="search"
+                  autoFocus
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search project, program, LGU, partner…"
+                  className="w-full rounded-xl border border-slate-700/80 bg-slate-950/80 py-3 pl-11 pr-10 text-sm text-white placeholder:text-slate-500 outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30"
+                />
+                <button
+                  type="button"
+                  onClick={() => setSearchOpen(false)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-slate-400 hover:text-white"
+                  aria-label="Close"
+                >
+                  <HiXMark className="h-5 w-5" aria-hidden />
+                </button>
+              </div>
+              <p className="mt-2 flex items-center gap-1.5 text-[11px] text-slate-400">
+                <HiMapPin className="h-3.5 w-3.5 text-cyan-400" aria-hidden />
+                Searching in{" "}
+                <span className="font-semibold text-cyan-200">
+                  {provinceFilter === "all" ? "all MIMAROPA" : provinceFilter}
+                </span>
+                · {filteredProjects.length} result
+                {filteredProjects.length === 1 ? "" : "s"}
+              </p>
+            </div>
+
+            <ul className="max-h-[min(52vh,420px)] overflow-y-auto overscroll-contain p-2 [-webkit-overflow-scrolling:touch] [scrollbar-width:thin]">
+              {filteredProjects.length === 0 ? (
+                <li className="px-3 py-8 text-center text-sm text-slate-500">
+                  No matches. Try another keyword or clear the province filter.
+                </li>
+              ) : null}
+              {filteredProjects.map((project) => {
+                const meta = PROGRAM_META[project.program];
+                const status = STATUS_META[project.status];
+                return (
+                  <li key={project.id} className="mb-1.5 last:mb-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleViewProject(project);
+                        setSearchOpen(false);
+                      }}
+                      className="flex w-full items-center gap-3 rounded-xl border border-slate-800/80 bg-slate-800/40 p-2.5 text-left transition hover:border-cyan-500/50 hover:bg-slate-800/70"
+                    >
+                      <span
+                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-950/70 text-[9px] font-extrabold uppercase ring-1 ring-slate-700/60 ${meta.accent}`}
+                      >
+                        {meta.short}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-semibold text-white">
+                          {project.name}
+                        </span>
+                        <span className="block truncate text-[11px] text-slate-400">
+                          {project.municipality}, {project.province}
+                        </span>
+                      </span>
+                      <span
+                        className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-semibold ring-1 ${status.className}`}
+                      >
+                        {status.label}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </div>
+      ) : null}
 
       <div className="pointer-events-auto absolute inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-25 flex snap-x justify-start gap-2 overflow-x-auto px-3 [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:justify-center lg:hidden">
         {(["stats", "graphs", "feed", "ai"] as const).map((sheet) => (
@@ -564,9 +925,21 @@ const RegionDashboard = () => {
             "lg:flex lg:max-h-[min(520px,62vh)] lg:overflow-y-auto",
           ].join(" ")}
         >
-          <p className="mb-2.5 shrink-0 text-[11px] font-bold uppercase tracking-[0.18em] text-cyan-200/85">
-            Executive overview
-          </p>
+          <div className="mb-2.5 flex shrink-0 items-center justify-between gap-2">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-cyan-200/85">
+              Executive overview
+            </p>
+            <button
+              type="button"
+              onClick={() => setStatsExpanded((v) => !v)}
+              className="rounded-lg border border-slate-700/80 px-2 py-1 text-[10px] font-semibold text-slate-400 transition hover:text-white"
+              aria-expanded={statsExpanded}
+            >
+              {statsExpanded ? "Collapse" : "Expand"}
+            </button>
+          </div>
+          {statsExpanded ? (
+          <>
           <div className="grid w-full grid-cols-2 gap-2">
             {STAT_CARDS.map((card) => {
               const Icon = card.icon;
@@ -680,6 +1053,8 @@ const RegionDashboard = () => {
             >
               Clear filters
             </button>
+          ) : null}
+          </>
           ) : null}
         </div>
 
@@ -1066,6 +1441,111 @@ const RegionDashboard = () => {
               {userLocation
                 ? "Route starts from your current GPS position."
                 : "No origin yet — Google opens with destination only. Tap Use my location for full route."}
+            </p>
+          </div>
+        </div>
+      ) : null}
+
+      {reportOpen ? (
+        <div
+          className="pointer-events-auto absolute inset-0 z-40 flex items-end justify-center bg-slate-950/70 p-3 backdrop-blur-sm sm:items-center"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Generate report"
+        >
+          <div className="w-full max-w-md overflow-y-auto overscroll-contain rounded-2xl border border-amber-800/50 bg-slate-900 p-4 shadow-2xl [-webkit-overflow-scrolling:touch] sm:p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-amber-300/80">
+                  Generate report
+                </p>
+                <h2 className="mt-1 text-lg font-semibold text-white">
+                  {filteredProjects.length} project
+                  {filteredProjects.length === 1 ? "" : "s"} in scope
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setReportOpen(false)}
+                className="rounded-lg border border-slate-700 p-2 text-slate-400 hover:text-white"
+                aria-label="Close"
+              >
+                <HiXMark className="h-5 w-5" aria-hidden />
+              </button>
+            </div>
+
+            <div className="mt-3 flex items-start gap-2 rounded-xl border border-slate-700/70 bg-slate-950/50 p-3">
+              <HiFunnel className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" aria-hidden />
+              <div className="min-w-0 text-xs text-slate-300">
+                <p className="font-semibold text-slate-200">Current scope</p>
+                <p className="mt-0.5 break-words text-slate-400">
+                  {describeFilters(reportFilters)}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+              <div className="rounded-xl border border-slate-700/70 bg-slate-950/50 p-2.5">
+                <p className="text-[9px] font-semibold uppercase tracking-wide text-slate-500">
+                  Funding
+                </p>
+                <p className="mt-1 text-sm font-bold text-cyan-200">
+                  {formatCompact(
+                    filteredProjects.reduce((s, p) => s + p.budget, 0),
+                  )}
+                </p>
+              </div>
+              <div className="rounded-xl border border-slate-700/70 bg-slate-950/50 p-2.5">
+                <p className="text-[9px] font-semibold uppercase tracking-wide text-slate-500">
+                  Beneficiaries
+                </p>
+                <p className="mt-1 text-sm font-bold text-violet-200">
+                  {formatCompact(
+                    filteredProjects.reduce((s, p) => s + p.beneficiaries, 0),
+                  )}
+                </p>
+              </div>
+              <div className="rounded-xl border border-slate-700/70 bg-slate-950/50 p-2.5">
+                <p className="text-[9px] font-semibold uppercase tracking-wide text-slate-500">
+                  Provinces
+                </p>
+                <p className="mt-1 text-sm font-bold text-emerald-200">
+                  {new Set(filteredProjects.map((p) => p.province)).size}
+                </p>
+              </div>
+            </div>
+
+            {reportError ? (
+              <p className="mt-3 rounded-xl border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+                {reportError}
+              </p>
+            ) : null}
+
+            <div className="mt-4 flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={handlePrintReport}
+                disabled={filteredProjects.length === 0}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/15 px-4 py-3 text-sm font-semibold text-amber-100 transition hover:bg-amber-500/25 disabled:opacity-40"
+              >
+                <HiPrinter className="h-5 w-5" aria-hidden />
+                Printable report (PDF)
+              </button>
+              <button
+                type="button"
+                onClick={handleDownloadCsv}
+                disabled={filteredProjects.length === 0}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-500/40 bg-cyan-500/15 px-4 py-3 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-500/25 disabled:opacity-40"
+              >
+                <HiTableCells className="h-5 w-5" aria-hidden />
+                Export spreadsheet (CSV)
+              </button>
+            </div>
+
+            <p className="mt-3 flex items-center gap-1.5 text-[11px] text-slate-500">
+              <HiDocumentText className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              Report reflects active filters. Clear filters for a region-wide
+              report.
             </p>
           </div>
         </div>
