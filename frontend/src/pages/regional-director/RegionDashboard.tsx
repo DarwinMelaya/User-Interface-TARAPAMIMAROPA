@@ -378,8 +378,8 @@ const RegionDashboard = () => {
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="hidden rounded-xl border border-emerald-500/30 bg-slate-900/90 px-3 py-2 backdrop-blur-md sm:block">
+          <div className="-mx-3 flex snap-x items-center gap-2 overflow-x-auto px-3 pb-1 [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
+            <div className="hidden shrink-0 rounded-xl border border-emerald-500/30 bg-slate-900/90 px-3 py-2 backdrop-blur-md sm:block">
               <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-200/80">
                 System
               </p>
@@ -388,7 +388,7 @@ const RegionDashboard = () => {
                 Online
               </p>
             </div>
-            <div className="flex rounded-xl border border-slate-700/80 bg-slate-900/90 p-1 backdrop-blur-md">
+            <div className="flex shrink-0 rounded-xl border border-slate-700/80 bg-slate-900/90 p-1 backdrop-blur-md">
               {BASE_LAYER_OPTIONS.map((opt) => (
                 <button
                   key={opt.id}
@@ -417,7 +417,7 @@ const RegionDashboard = () => {
                 });
               }}
               className={[
-                "inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold backdrop-blur-md transition",
+                "inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold backdrop-blur-md transition",
                 viewMode === "3d"
                   ? "border-fuchsia-400/50 bg-fuchsia-500/20 text-fuchsia-100 shadow-[0_0_18px_rgba(217,70,239,0.25)]"
                   : "border-slate-600/60 bg-slate-900/90 text-slate-200 hover:border-fuchsia-500/40",
@@ -425,19 +425,23 @@ const RegionDashboard = () => {
               aria-pressed={viewMode === "3d"}
             >
               <HiCube className="h-4 w-4" aria-hidden />
-              {viewMode === "3d" ? "3D on" : "3D view"}
+              <span className="hidden sm:inline">
+                {viewMode === "3d" ? "3D on" : "3D view"}
+              </span>
             </button>
             <button
               type="button"
               onClick={handleLocateMe}
               disabled={locateLoading}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-slate-900/90 px-3 py-2 text-sm font-semibold text-emerald-100 backdrop-blur-md disabled:opacity-50"
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-slate-900/90 px-3 py-2 text-sm font-semibold text-emerald-100 backdrop-blur-md disabled:opacity-50"
             >
               <HiMapPin
                 className={`h-4 w-4 ${locateLoading ? "animate-pulse" : ""}`}
                 aria-hidden
               />
-              {locateLoading ? "Locating…" : "My location"}
+              <span className="hidden sm:inline">
+                {locateLoading ? "Locating…" : "My location"}
+              </span>
             </button>
             <button
               type="button"
@@ -450,7 +454,7 @@ const RegionDashboard = () => {
                 }
               }}
               className={[
-                "inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold backdrop-blur-md transition",
+                "inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold backdrop-blur-md transition",
                 graphsExpanded || mobileSheet === "graphs"
                   ? "border-teal-400/50 bg-teal-500/20 text-teal-100 shadow-[0_0_18px_rgba(45,212,191,0.22)]"
                   : "border-slate-600/60 bg-slate-900/90 text-slate-200 hover:border-teal-500/40",
@@ -458,13 +462,13 @@ const RegionDashboard = () => {
               aria-pressed={graphsExpanded || mobileSheet === "graphs"}
             >
               <HiChartBar className="h-4 w-4" aria-hidden />
-              Graphs
+              <span className="hidden sm:inline">Graphs</span>
             </button>
             <button
               type="button"
               onClick={toggleChat}
               className={[
-                "inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold backdrop-blur-md transition",
+                "inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold backdrop-blur-md transition",
                 chatOpen || mobileSheet === "ai"
                   ? "border-violet-400/60 bg-violet-500/25 text-violet-100 shadow-[0_0_18px_rgba(167,139,250,0.28)]"
                   : "border-violet-500/30 bg-slate-900/90 text-violet-100 hover:border-violet-400/50",
@@ -472,13 +476,14 @@ const RegionDashboard = () => {
               aria-pressed={chatOpen || mobileSheet === "ai"}
             >
               <HiSparkles className="h-4 w-4" aria-hidden />
-              AI chat
+              <span className="hidden sm:inline">AI chat</span>
             </button>
             <Link
               to="/regional-director/programs"
-              className="inline-flex items-center justify-center rounded-xl border border-blue-500/30 bg-blue-950/80 px-3 py-2 text-sm font-medium text-blue-100 backdrop-blur-md sm:px-4"
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-blue-500/30 bg-blue-950/80 px-3 py-2 text-sm font-medium text-blue-100 backdrop-blur-md sm:px-4"
             >
-              Programs
+              <HiBuildingOffice2 className="h-4 w-4 sm:hidden" aria-hidden />
+              <span className="hidden sm:inline">Programs</span>
             </Link>
           </div>
         </div>
@@ -514,14 +519,14 @@ const RegionDashboard = () => {
         </div>
       </header>
 
-      <div className="pointer-events-auto absolute inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-25 flex justify-center gap-2 px-3 lg:hidden">
+      <div className="pointer-events-auto absolute inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-25 flex snap-x justify-start gap-2 overflow-x-auto px-3 [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:justify-center lg:hidden">
         {(["stats", "graphs", "feed", "ai"] as const).map((sheet) => (
           <button
             key={sheet}
             type="button"
             onClick={() => toggleMobileSheet(sheet)}
             className={[
-              "rounded-full border px-3 py-2 text-xs font-bold shadow-lg backdrop-blur-md transition capitalize",
+              "shrink-0 rounded-full border px-3 py-2 text-xs font-bold shadow-lg backdrop-blur-md transition capitalize",
               mobileSheet === sheet
                 ? "border-cyan-400/60 bg-cyan-500/25 text-cyan-100"
                 : "border-slate-700/80 bg-slate-900/90 text-slate-300",
@@ -537,7 +542,7 @@ const RegionDashboard = () => {
               setMobileSheet(null);
               setChatOpen(false);
             }}
-            className="rounded-full border border-slate-600/80 bg-slate-900/90 px-3 py-2 text-xs font-bold text-slate-400"
+            className="shrink-0 rounded-full border border-slate-600/80 bg-slate-900/90 px-3 py-2 text-xs font-bold text-slate-400"
           >
             Map
           </button>
@@ -554,7 +559,7 @@ const RegionDashboard = () => {
           className={[
             "pointer-events-auto flex w-full shrink-0 flex-col overflow-hidden rounded-2xl border border-cyan-400/25 bg-slate-900/92 p-3 shadow-[0_8px_40px_rgba(0,0,0,0.45),0_0_30px_rgba(34,211,238,0.08)] backdrop-blur-xl lg:max-w-[min(420px,calc(100%-2rem))]",
             mobileSheet === "stats"
-              ? "max-h-[min(55vh,420px)] overflow-y-auto"
+              ? "max-h-[min(55vh,420px)] overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]"
               : "hidden",
             "lg:flex lg:max-h-[min(520px,62vh)] lg:overflow-y-auto",
           ].join(" ")}
@@ -836,7 +841,7 @@ const RegionDashboard = () => {
           </div>
 
           {feedExpanded ? (
-            <ul className="flex-1 overflow-y-auto p-2 sm:p-3 [scrollbar-width:thin]">
+            <ul className="flex-1 overflow-y-auto overscroll-contain p-2 sm:p-3 [-webkit-overflow-scrolling:touch] [scrollbar-width:thin]">
               {filteredProjects.length === 0 ? (
                 <li className="flex flex-col items-center px-4 py-10 text-center">
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-cyan-800/50 bg-cyan-950/50">
@@ -940,7 +945,7 @@ const RegionDashboard = () => {
           aria-modal="true"
           aria-label="Project detail"
         >
-          <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-cyan-800/50 bg-slate-900 p-5 shadow-2xl">
+          <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto overscroll-contain rounded-2xl border border-cyan-800/50 bg-slate-900 p-4 shadow-2xl [-webkit-overflow-scrolling:touch] sm:p-5">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-cyan-300/80">
