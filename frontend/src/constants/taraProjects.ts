@@ -103,6 +103,50 @@ export const PROGRAMS: TaraProgram[] = [
   "Innovation Hubs",
 ];
 
+/**
+ * Project TYPE classification (matches the DOST Impression project types).
+ * This is what the UI shows as "Type" of the project.
+ */
+export type TaraType =
+  | "SETUP"
+  | "Roll-out"
+  | "TAPI-assisted"
+  | "GIA (Community Based)"
+  | "GIA (Region-initiated Projects) Internally Funded"
+  | "GIA (Region-initiated Projects) Externally Funded"
+  | "CEST";
+
+export const TARA_TYPES: TaraType[] = [
+  "SETUP",
+  "Roll-out",
+  "TAPI-assisted",
+  "GIA (Community Based)",
+  "GIA (Region-initiated Projects) Internally Funded",
+  "GIA (Region-initiated Projects) Externally Funded",
+  "CEST",
+];
+
+const PROGRAM_TO_TYPE: Record<TaraProgram, TaraType> = {
+  SETUP: "SETUP",
+  CEST: "CEST",
+  GIA: "GIA (Community Based)",
+  "R&D": "GIA (Region-initiated Projects) Internally Funded",
+  STARBOOKS: "Roll-out",
+  REIINN: "GIA (Region-initiated Projects) Externally Funded",
+  iHub: "Roll-out",
+  "Coral Restoration": "GIA (Region-initiated Projects) Externally Funded",
+  "Water Projects": "GIA (Community Based)",
+  Agriculture: "TAPI-assisted",
+  "Renewable Energy": "GIA (Region-initiated Projects) Internally Funded",
+  "Disaster Resilience": "GIA (Community Based)",
+  "Technology Transfer": "TAPI-assisted",
+  "Innovation Hubs": "Roll-out",
+};
+
+/** The project's "Type" classification (one of TARA_TYPES). */
+export const projectType = (p: TaraProject): TaraType =>
+  PROGRAM_TO_TYPE[p.program];
+
 export const PROJECT_STATUSES: ProjectStatus[] = [
   "planning",
   "ongoing",

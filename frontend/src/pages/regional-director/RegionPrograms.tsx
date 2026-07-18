@@ -6,26 +6,31 @@ import {
   HiChartPie,
   HiClipboardDocumentList,
   HiMapPin,
+  HiPresentationChartLine,
   HiSquares2X2,
   HiUserGroup,
   HiXMark,
 } from "react-icons/hi2";
+import ProgramsGraphs from "../../components/graphs/ProgramsGraphs";
 import {
   MOCK_TARA_PROJECTS,
   PROGRAMS,
   PROGRAM_META,
   PROVINCES,
   STATUS_META,
+  TARA_TYPES,
   describeProject,
   formatCompact,
   formatPeso,
   projectImage,
+  projectType,
   projectYear,
   summarizeProjects,
   type ProjectStatus,
   type Province,
   type TaraProgram,
   type TaraProject,
+  type TaraType,
 } from "../../constants/taraProjects";
 
 const utilizedOf = (p: TaraProject) => Math.round((p.budget * p.progress) / 100);
@@ -54,6 +59,7 @@ const RegionPrograms = () => {
   const [projects] = useState<TaraProject[]>(MOCK_TARA_PROJECTS);
   const [provinceFilter, setProvinceFilter] = useState<Province | "all">("all");
   const [viewing, setViewing] = useState<TaraProject | null>(null);
+  const [graphsOpen, setGraphsOpen] = useState(false);
 
   const scopedProjects = useMemo(
     () =>
@@ -125,16 +131,19 @@ const RegionPrograms = () => {
     return { rows, max };
   }, [scopedProjects]);
 
-  // Graph 3 — projects by program (respects the selected province).
-  const byProgram = useMemo(() => {
-    const rows = programAggregates.map((a) => ({
-      program: a.program,
-      count: a.count,
-      budget: a.budget,
-    }));
+  // Graph 3 — projects by TYPE (respects the selected province).
+  const byType = useMemo(() => {
+    const rows = TARA_TYPES.map((type) => {
+      const items = scopedProjects.filter((p) => projectType(p) === type);
+      return {
+        type,
+        count: items.length,
+        budget: items.reduce((s, p) => s + p.budget, 0),
+      };
+    }).filter((r) => r.count > 0);
     const max = Math.max(1, ...rows.map((r) => r.count));
     return { rows, max };
-  }, [programAggregates]);
+  }, [scopedProjects]);
 
   const utilizationPct = stats.funding
     ? Math.round((stats.utilized / stats.funding) * 100)
@@ -142,8 +151,8 @@ const RegionPrograms = () => {
 
   const kpis = [
     {
-      label: "Active programs",
-      value: String(programAggregates.length),
+      label: "Project types",
+      value: String(byType.rows.length),
       icon: HiClipboardDocumentList,
       accent: "text-cyan-200",
     },
@@ -190,13 +199,23 @@ const RegionPrograms = () => {
               or a bar to focus, then scroll to the project list below.
             </p>
           </div>
-          <Link
-            to="/regional-director/dashboard"
-            className="inline-flex w-fit items-center gap-2 rounded-xl border border-cyan-500/40 bg-cyan-500/15 px-4 py-2.5 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-500/25"
-          >
-            <HiMapPin className="h-4 w-4" aria-hidden />
-            Command map
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setGraphsOpen(true)}
+              className="inline-flex w-fit items-center gap-2 rounded-xl border border-blue-500/40 bg-blue-500/15 px-4 py-2.5 text-sm font-semibold text-blue-100 transition hover:bg-blue-500/25"
+            >
+              <HiPresentationChartLine className="h-4 w-4" aria-hidden />
+              Summary graphs
+            </button>
+            <Link
+              to="/regional-director/dashboard"
+              className="inline-flex w-fit items-center gap-2 rounded-xl border border-cyan-500/40 bg-cyan-500/15 px-4 py-2.5 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-500/25"
+            >
+              <HiMapPin className="h-4 w-4" aria-hidden />
+              Command map
+            </Link>
+          </div>
         </header>
 
         <div className="mt-5 flex items-center gap-2 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -357,23 +376,22 @@ const RegionPrograms = () => {
 
           <div className="rounded-2xl border border-slate-800/80 bg-slate-900/70 p-4 backdrop-blur">
             <p className="mb-3 text-sm font-semibold text-white">
-              By program
+              By type
               {provinceFilter === "all" ? "" : ` · ${provinceFilter}`}
             </p>
             <div className="space-y-2.5">
-              {byProgram.rows.length === 0 ? (
+              {byType.rows.length === 0 ? (
                 <p className="text-xs text-slate-500">No projects.</p>
               ) : null}
-              {byProgram.rows.map((row) => {
-                const meta = PROGRAM_META[row.program];
-                const pct = Math.round((row.count / byProgram.max) * 100);
+              {byType.rows.map((row) => {
+                const pct = Math.round((row.count / byType.max) * 100);
                 return (
-                  <div key={row.program}>
-                    <div className="mb-1 flex items-center justify-between text-xs">
-                      <span className={`font-semibold ${meta.accent}`}>
-                        {row.program}
+                  <div key={row.type}>
+                    <div className="mb-1 flex items-center justify-between gap-2 text-xs">
+                      <span className="min-w-0 truncate font-semibold text-teal-200">
+                        {row.type}
                       </span>
-                      <span className="text-slate-400">
+                      <span className="shrink-0 text-slate-400">
                         <span className="font-bold text-slate-200">
                           {row.count}
                         </span>{" "}
@@ -459,8 +477,8 @@ const RegionPrograms = () => {
                         {project.description}
                       </p>
                     </td>
-                    <td className="px-3 py-2.5 text-slate-400">
-                      {project.program}
+                    <td className="max-w-[160px] px-3 py-2.5 text-slate-400">
+                      {projectType(project)}
                     </td>
                     <td className="px-3 py-2.5 text-slate-400">
                       {projectYear(project)}
@@ -491,6 +509,49 @@ const RegionPrograms = () => {
           </table>
         </div>
       </div>
+
+      {graphsOpen && (
+        <div
+          className="fixed inset-0 z-[1000] flex items-start justify-center bg-slate-950/80 p-0 backdrop-blur-sm sm:p-4"
+          onClick={() => setGraphsOpen(false)}
+        >
+          <div
+            className="max-h-[100vh] w-full max-w-5xl overflow-y-auto rounded-none border border-blue-800/40 bg-slate-950 p-4 shadow-2xl sm:max-h-[92vh] sm:rounded-3xl sm:p-6 [-webkit-overflow-scrolling:touch] [overscroll-behavior:contain]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <p className="inline-flex items-center gap-2 rounded-full border border-blue-400/30 bg-blue-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-blue-200">
+                  <HiPresentationChartLine className="h-3.5 w-3.5" aria-hidden />
+                  Project Summaries
+                </p>
+                <h2 className="mt-2 text-lg font-bold text-white sm:text-xl">
+                  Summary Graphs ·{" "}
+                  {provinceFilter === "all" ? "MIMAROPA" : provinceFilter}
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setGraphsOpen(false)}
+                className="rounded-lg border border-slate-700 p-2 text-slate-400 transition hover:text-white"
+                aria-label="Close"
+              >
+                <HiXMark className="h-5 w-5" aria-hidden />
+              </button>
+            </div>
+
+            <ProgramsGraphs
+              projects={scopedProjects}
+              scope={provinceFilter === "all" ? "MIMAROPA (all provinces)" : provinceFilter}
+            />
+
+            <p className="mt-4 text-center text-[11px] text-slate-600">
+              Information &amp; Monitoring of Projects, Services and S&amp;T
+              Interventions · Powered by DOST-MIMAROPA
+            </p>
+          </div>
+        </div>
+      )}
 
       {viewing && (
         <div
