@@ -10,6 +10,7 @@ import {
   HiMapPin,
   HiSquares2X2,
   HiUserGroup,
+  HiXMark,
 } from "react-icons/hi2";
 import {
   MOCK_TARA_PROJECTS,
@@ -17,8 +18,10 @@ import {
   PROGRAM_META,
   PROVINCES,
   STATUS_META,
+  describeProject,
   formatCompact,
   formatPeso,
+  projectImage,
   summarizeProjects,
   type ProjectStatus,
   type Province,
@@ -51,6 +54,7 @@ const emptyStatusCounts = (): Record<ProjectStatus, number> => ({
 const RegionPrograms = () => {
   const [projects] = useState<TaraProject[]>(MOCK_TARA_PROJECTS);
   const [provinceFilter, setProvinceFilter] = useState<Province | "all">("all");
+  const [viewing, setViewing] = useState<TaraProject | null>(null);
 
   const scopedProjects = useMemo(
     () =>
@@ -477,7 +481,8 @@ const RegionPrograms = () => {
             return (
               <article
                 key={project.id}
-                className="flex gap-3 rounded-2xl border border-slate-800/80 bg-slate-900/70 p-3.5 backdrop-blur transition hover:border-cyan-500/40"
+                onClick={() => setViewing(project)}
+                className="flex cursor-pointer gap-3 rounded-2xl border border-slate-800/80 bg-slate-900/70 p-3.5 backdrop-blur transition hover:border-cyan-500/40"
               >
                 <div className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-xl bg-slate-950/70 ring-1 ring-slate-700/60">
                   <span
@@ -512,6 +517,126 @@ const RegionPrograms = () => {
           })}
         </div>
       </div>
+
+      {viewing && (
+        <div
+          className="fixed inset-0 z-[1000] flex items-end justify-center bg-slate-950/70 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+          onClick={() => setViewing(null)}
+        >
+          <div
+            className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-cyan-800/50 bg-slate-900 p-5 shadow-2xl sm:rounded-3xl [-webkit-overflow-scrolling:touch] [overscroll-behavior:contain]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-cyan-300/80">
+                  {PROGRAM_META[viewing.program].short} · {viewing.province}
+                </p>
+                <h2 className="mt-1 text-lg font-semibold leading-snug text-white">
+                  {viewing.name}
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setViewing(null)}
+                className="rounded-lg border border-slate-700 p-2 text-slate-400 transition hover:text-white"
+                aria-label="Close"
+              >
+                <HiXMark className="h-5 w-5" aria-hidden />
+              </button>
+            </div>
+
+            <img
+              src={viewing.photo_url || projectImage(viewing.id)}
+              alt={viewing.name}
+              loading="lazy"
+              className="mt-3 h-44 w-full rounded-xl object-cover ring-1 ring-slate-700/60"
+            />
+
+            <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.14em] text-cyan-300/70">
+              Project description
+            </p>
+            <p className="mt-1 text-sm leading-relaxed text-slate-300">
+              {describeProject(viewing)}
+            </p>
+
+            <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <dt className="text-[11px] uppercase tracking-wide text-slate-500">
+                  Status
+                </dt>
+                <dd className="mt-0.5 font-semibold text-white">
+                  {STATUS_META[viewing.status].label}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-[11px] uppercase tracking-wide text-slate-500">
+                  Progress
+                </dt>
+                <dd className="mt-0.5 font-semibold text-cyan-300">
+                  {viewing.progress}%
+                </dd>
+              </div>
+              <div>
+                <dt className="text-[11px] uppercase tracking-wide text-slate-500">
+                  Municipality
+                </dt>
+                <dd className="mt-0.5 font-semibold text-white">
+                  {viewing.municipality}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-[11px] uppercase tracking-wide text-slate-500">
+                  Barangay
+                </dt>
+                <dd className="mt-0.5 font-semibold text-white">
+                  {viewing.barangay}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-[11px] uppercase tracking-wide text-slate-500">
+                  Budget
+                </dt>
+                <dd className="mt-0.5 font-bold text-cyan-300">
+                  {formatPeso(viewing.budget)}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-[11px] uppercase tracking-wide text-slate-500">
+                  Beneficiaries
+                </dt>
+                <dd className="mt-0.5 font-semibold text-white">
+                  {formatCompact(viewing.beneficiaries)}
+                </dd>
+              </div>
+              <div className="col-span-2">
+                <dt className="text-[11px] uppercase tracking-wide text-slate-500">
+                  Partner agency
+                </dt>
+                <dd className="mt-0.5 font-semibold text-white">
+                  {viewing.partner_agency}
+                </dd>
+              </div>
+              <div className="col-span-2">
+                <dt className="text-[11px] uppercase tracking-wide text-slate-500">
+                  Latest accomplishment
+                </dt>
+                <dd className="mt-0.5 text-slate-200">
+                  {viewing.latest_accomplishment}
+                </dd>
+              </div>
+              <div className="col-span-2">
+                <dt className="text-[11px] uppercase tracking-wide text-slate-500">
+                  Coordinates
+                </dt>
+                <dd className="mt-0.5 font-mono text-xs text-slate-300">
+                  {viewing.latitude.toFixed(5)}, {viewing.longitude.toFixed(5)}
+                </dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+      )}
     </section>
   );
 };

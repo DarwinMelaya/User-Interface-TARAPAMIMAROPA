@@ -41,8 +41,10 @@ import {
   PROGRAMS,
   PROVINCES,
   STATUS_META,
+  describeProject,
   formatCompact,
   formatPeso,
+  projectImage,
   summarizeProjects,
   type ProjectStatus,
   type Province,
@@ -1339,6 +1341,20 @@ const RegionDashboard = () => {
                 <HiXMark className="h-5 w-5" aria-hidden />
               </button>
             </div>
+
+            <img
+              src={viewing.photo_url || projectImage(viewing.id)}
+              alt={viewing.name}
+              loading="lazy"
+              className="mt-3 h-44 w-full rounded-xl object-cover ring-1 ring-slate-700/60"
+            />
+
+            <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.14em] text-cyan-300/70">
+              Project description
+            </p>
+            <p className="mt-1 text-sm leading-relaxed text-slate-300">
+              {describeProject(viewing)}
+            </p>
 
             <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
               <div className="rounded-xl border border-slate-700/70 bg-slate-950/50 p-3">

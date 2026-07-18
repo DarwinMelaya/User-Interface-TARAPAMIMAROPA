@@ -1,7 +1,9 @@
 import { useMemo, useState } from "react";
 import {
   HiArrowDownTray,
+  HiArrowTopRightOnSquare,
   HiMagnifyingGlass,
+  HiPaperAirplane,
   HiPrinter,
   HiXMark,
 } from "react-icons/hi2";
@@ -15,6 +17,7 @@ import {
   PROVINCE_NAME,
   REGION_NAME,
   formatPeso,
+  type ImpressionProject,
   type ImpressionSector,
   type ImpressionStatus,
   type ImpressionType,
@@ -22,6 +25,17 @@ import {
 } from "../../constants/marinduqueProjects";
 
 const PAGE_SIZE = 10;
+
+const projectImage = (seed: string) =>
+  `https://picsum.photos/seed/${encodeURIComponent(seed)}/640/320`;
+
+const openGoogleDirections = (p: ImpressionProject) => {
+  const url = new URL("https://www.google.com/maps/dir/");
+  url.searchParams.set("api", "1");
+  url.searchParams.set("destination", `${p.latitude},${p.longitude}`);
+  url.searchParams.set("travelmode", "driving");
+  window.open(url.toString(), "_blank", "noopener,noreferrer");
+};
 
 const STATUS_CLASS: Record<ImpressionStatus, string> = {
   "On-going": "bg-cyan-500/15 text-cyan-300 ring-cyan-400/30",
@@ -49,6 +63,7 @@ const PstoPrograms = () => {
   const [sector, setSector] = useState<ImpressionSector | "all">("all");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [viewing, setViewing] = useState<ImpressionProject | null>(null);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -380,7 +395,8 @@ const PstoPrograms = () => {
               {pageItems.map((p, idx) => (
                 <tr
                   key={p.code}
-                  className="border-t border-slate-800/60 align-top transition hover:bg-slate-800/40"
+                  onClick={() => setViewing(p)}
+                  className="cursor-pointer border-t border-slate-800/60 align-top transition hover:bg-slate-800/40"
                 >
                   <td className="px-3 py-2.5 text-slate-500">
                     {(safePage - 1) * PAGE_SIZE + idx + 1}
@@ -465,6 +481,120 @@ const PstoPrograms = () => {
           build
         </p>
       </div>
+
+      {viewing && (
+        <div
+          className="fixed inset-0 z-[1000] flex items-end justify-center bg-slate-950/70 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+          onClick={() => setViewing(null)}
+        >
+          <div
+            className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-slate-700/70 bg-slate-900 p-5 shadow-2xl sm:rounded-3xl [-webkit-overflow-scrolling:touch] [overscroll-behavior:contain]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <span className="inline-flex rounded-full bg-emerald-500/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-300 ring-1 ring-emerald-400/30">
+                  {viewing.type}
+                </span>
+                <h2 className="mt-2 text-lg font-bold leading-snug text-white">
+                  {viewing.title}
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setViewing(null)}
+                className="rounded-full p-1.5 text-slate-400 transition hover:bg-slate-800 hover:text-white"
+                aria-label="Close"
+              >
+                <HiXMark className="h-5 w-5" />
+              </button>
+            </div>
+
+            <img
+              src={projectImage(viewing.code)}
+              alt={viewing.title}
+              loading="lazy"
+              className="mt-3 h-44 w-full rounded-xl object-cover ring-1 ring-slate-700/60"
+            />
+
+            <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-300/70">
+              Project description
+            </p>
+            <p className="mt-1 text-sm leading-relaxed text-slate-300">
+              {viewing.description}
+            </p>
+
+            <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <dt className="text-[11px] uppercase tracking-wide text-slate-500">
+                  Status
+                </dt>
+                <dd className="mt-0.5 font-semibold text-white">
+                  {viewing.status}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-[11px] uppercase tracking-wide text-slate-500">
+                  Year
+                </dt>
+                <dd className="mt-0.5 font-semibold text-white">
+                  {viewing.year}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-[11px] uppercase tracking-wide text-slate-500">
+                  Sector
+                </dt>
+                <dd className="mt-0.5 font-semibold text-white">
+                  {viewing.sector}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-[11px] uppercase tracking-wide text-slate-500">
+                  Municipality
+                </dt>
+                <dd className="mt-0.5 font-semibold text-white">
+                  {viewing.municipality}
+                </dd>
+              </div>
+              <div className="col-span-2">
+                <dt className="text-[11px] uppercase tracking-wide text-slate-500">
+                  Beneficiary
+                </dt>
+                <dd className="mt-0.5 font-semibold text-white">
+                  {viewing.beneficiary}
+                </dd>
+              </div>
+              <div className="col-span-2">
+                <dt className="text-[11px] uppercase tracking-wide text-slate-500">
+                  Project cost
+                </dt>
+                <dd className="mt-0.5 font-bold text-emerald-300">
+                  {formatPeso(viewing.cost)}
+                </dd>
+              </div>
+              <div className="col-span-2">
+                <dt className="text-[11px] uppercase tracking-wide text-slate-500">
+                  Coordinates
+                </dt>
+                <dd className="mt-0.5 font-mono text-xs text-slate-300">
+                  {viewing.latitude.toFixed(5)}, {viewing.longitude.toFixed(5)}
+                </dd>
+              </div>
+            </dl>
+
+            <button
+              type="button"
+              onClick={() => openGoogleDirections(viewing)}
+              className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-emerald-400"
+            >
+              <HiPaperAirplane className="h-4 w-4" />
+              Get directions
+              <HiArrowTopRightOnSquare className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
     </section>
   );
 };

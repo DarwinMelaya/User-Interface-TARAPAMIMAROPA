@@ -100,6 +100,9 @@ const toTaraProject = (p: ImpressionProject): TaraProject => {
   };
 };
 
+const projectImage = (seed: string) =>
+  `https://picsum.photos/seed/${encodeURIComponent(seed)}/640/320`;
+
 const formatCompactPeso = (n: number) =>
   "₱" +
   new Intl.NumberFormat("en", {
@@ -681,7 +684,16 @@ const PstoDashboard = () => {
               </button>
             </div>
 
-            <p className="mt-3 text-sm leading-relaxed text-slate-300">
+            <img
+              src={projectImage(viewing.code)}
+              alt={viewing.title}
+              loading="lazy"
+              className="mt-3 h-44 w-full rounded-xl object-cover ring-1 ring-slate-700/60"
+            />
+            <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-300/70">
+              Project description
+            </p>
+            <p className="mt-1 text-sm leading-relaxed text-slate-300">
               {viewing.description}
             </p>
 
