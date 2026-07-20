@@ -208,7 +208,7 @@ const LandingPage = () => {
         <div className="animate-blob pointer-events-none absolute -right-24 top-6 h-96 w-96 rounded-full bg-blue-600/15 blur-3xl [animation-delay:-6s]" />
         <div className="animate-blob pointer-events-none absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-violet-600/10 blur-3xl [animation-delay:-12s]" />
 
-        <div className="relative mx-auto max-w-6xl px-4 pb-2 pt-10 sm:px-6 sm:pt-16">
+        <div className="relative z-10 mx-auto max-w-6xl px-4 pb-2 pt-10 sm:px-6 sm:pt-16">
           <p className="animate-fade-up inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-200 shadow-sm shadow-cyan-500/10">
             <HiSparkles className="h-3.5 w-3.5" aria-hidden />
             Transparency · Science for the People

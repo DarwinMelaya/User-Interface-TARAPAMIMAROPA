@@ -14,7 +14,6 @@ import {
 import ProgramsGraphs from "../../components/graphs/ProgramsGraphs";
 import {
   MOCK_TARA_PROJECTS,
-  PROGRAMS,
   PROGRAM_META,
   PROVINCES,
   STATUS_META,
@@ -28,23 +27,8 @@ import {
   summarizeProjects,
   type ProjectStatus,
   type Province,
-  type TaraProgram,
   type TaraProject,
-  type TaraType,
 } from "../../constants/taraProjects";
-
-const utilizedOf = (p: TaraProject) => Math.round((p.budget * p.progress) / 100);
-
-type ProgramAggregate = {
-  program: TaraProgram;
-  count: number;
-  budget: number;
-  utilized: number;
-  beneficiaries: number;
-  avgProgress: number;
-  atRisk: number;
-  statusCounts: Record<ProjectStatus, number>;
-};
 
 const emptyStatusCounts = (): Record<ProjectStatus, number> => ({
   planning: 0,
@@ -73,35 +57,6 @@ const RegionPrograms = () => {
     () => summarizeProjects(scopedProjects),
     [scopedProjects],
   );
-
-  const programAggregates = useMemo<ProgramAggregate[]>(() => {
-    return PROGRAMS.map((program) => {
-      const items = scopedProjects.filter((p) => p.program === program);
-      const budget = items.reduce((s, p) => s + p.budget, 0);
-      const utilized = items.reduce((s, p) => s + utilizedOf(p), 0);
-      const beneficiaries = items.reduce((s, p) => s + p.beneficiaries, 0);
-      const avgProgress = items.length
-        ? Math.round(items.reduce((s, p) => s + p.progress, 0) / items.length)
-        : 0;
-      const statusCounts = emptyStatusCounts();
-      items.forEach((p) => {
-        statusCounts[p.status] += 1;
-      });
-      const atRisk = statusCounts.delayed + statusCounts.on_hold;
-      return {
-        program,
-        count: items.length,
-        budget,
-        utilized,
-        beneficiaries,
-        avgProgress,
-        atRisk,
-        statusCounts,
-      };
-    })
-      .filter((a) => a.count > 0)
-      .sort((a, b) => b.budget - a.budget);
-  }, [scopedProjects]);
 
   // Graph 1 — projects per PSTO (province). Always all provinces so the
   // Director can compare offices at a glance; a bar can be clicked to focus.
