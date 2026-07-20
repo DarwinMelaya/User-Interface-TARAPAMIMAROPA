@@ -644,15 +644,6 @@ const RegionDashboard = () => {
               <HiMagnifyingGlass className="h-4 w-4" aria-hidden />
               <span className="hidden sm:inline">Search</span>
             </button>
-            <div className="hidden shrink-0 rounded-xl border border-emerald-500/30 bg-slate-900/90 px-3 py-2 backdrop-blur-md sm:block">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-200/80">
-                System
-              </p>
-              <p className="mt-0.5 flex items-center gap-1.5 text-sm font-semibold text-emerald-300">
-                <HiSignal className="h-4 w-4" aria-hidden />
-                Online
-              </p>
-            </div>
             <div className="flex shrink-0 rounded-xl border border-slate-700/80 bg-slate-900/90 p-1 backdrop-blur-md">
               {BASE_LAYER_OPTIONS.map((opt) => (
                 <button

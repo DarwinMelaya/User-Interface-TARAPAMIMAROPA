@@ -171,10 +171,7 @@ const openGoogleDirections = (
 };
 
 /** Export currently filtered rows (search + province + status). */
-const downloadFilteredCsv = (
-  projects: TaraProject[],
-  scope: ExportScope,
-) => {
+const downloadFilteredCsv = (projects: TaraProject[], scope: ExportScope) => {
   const stamp = new Date();
   const meta = [
     "TARAMIMAROPA Public Project Export",
@@ -366,7 +363,7 @@ const LandingPage = () => {
                     Public project map
                   </div>
                   <h1 className="mt-1.5 text-xl font-black tracking-tight text-white sm:text-2xl">
-                    TARAMIMAROPA
+                    TARAPAMIMAROPA
                   </h1>
                 </div>
               </div>
