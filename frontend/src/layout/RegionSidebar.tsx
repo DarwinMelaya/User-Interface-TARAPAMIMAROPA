@@ -5,6 +5,7 @@ import {
   HiBars3,
   HiClipboardDocumentList,
   HiSquares2X2,
+  HiUserGroup,
   HiXMark,
 } from "react-icons/hi2";
 
@@ -23,6 +24,12 @@ const navItems = [
     label: "Programs",
     shortLabel: "Programs",
     Icon: HiClipboardDocumentList,
+  },
+  {
+    to: "/regional-director/employee-record",
+    label: "Employee Record",
+    shortLabel: "Employee Record",
+    Icon: HiUserGroup,
   },
 ];
 
@@ -45,9 +52,7 @@ const RegionSidebar = () => {
         <p className="truncate text-sm font-semibold text-white">
           TARA PAMIMAROPA
         </p>
-        <p className="truncate text-xs text-slate-400">
-          Regional Director
-        </p>
+        <p className="truncate text-xs text-slate-400">Regional Director</p>
       </div>
     </div>
   );
@@ -174,9 +179,7 @@ const RegionSidebar = () => {
               </button>
             </div>
 
-            <p className="mb-2 px-3 text-xs font-medium text-slate-500">
-              Menu
-            </p>
+            <p className="mb-2 px-3 text-xs font-medium text-slate-500">Menu</p>
             {navList(closeDrawer)}
 
             <div className="mt-6 border-t border-slate-800 pt-4">
@@ -191,14 +194,10 @@ const RegionSidebar = () => {
 
       {/* Desktop rail */}
       <aside className="sticky top-0 hidden h-screen w-72 shrink-0 flex-col border-r border-slate-800 bg-slate-950 text-slate-200 lg:flex">
-        <div className="border-b border-slate-800 px-4 py-5">
-          {brandBlock}
-        </div>
+        <div className="border-b border-slate-800 px-4 py-5">{brandBlock}</div>
 
         <div className="flex flex-1 flex-col px-3 py-4">
-          <p className="mb-2 px-3 text-xs font-medium text-slate-500">
-            Menu
-          </p>
+          <p className="mb-2 px-3 text-xs font-medium text-slate-500">Menu</p>
           {navList()}
         </div>
 

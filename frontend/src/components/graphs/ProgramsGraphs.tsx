@@ -1,4 +1,10 @@
-import { useMemo } from "react";
+import {
+  useId,
+  useMemo,
+  useState,
+  type MouseEvent,
+  type ReactNode,
+} from "react";
 import {
   PROVINCES,
   PROJECT_STATUSES,
@@ -9,23 +15,106 @@ import {
   formatPeso,
   projectType,
   projectYear,
+  type ProjectStatus,
+  type Province,
   type TaraProject,
 } from "../../constants/taraProjects";
 
-type Row = { label: string; value: number };
+type Row = { key: string; label: string; value: number; color: string };
 
-const PALETTE = [
+type ChartTip = {
+  label: string;
+  value: string;
+  detail?: string;
+  color: string;
+  x: number;
+  y: number;
+};
+
+type ValueFormat = "number" | "peso" | "compact";
+
+const BRAND = "#22d3ee";
+
+const STATUS_COLORS: Record<ProjectStatus, string> = {
+  planning: "#94a3b8",
+  ongoing: "#22d3ee",
+  completed: "#34d399",
+  delayed: "#f87171",
+  on_hold: "#fbbf24",
+  cancelled: "#fb7185",
+};
+
+const PROVINCE_COLORS: Record<Province, string> = {
+  "Oriental Mindoro": "#22d3ee",
+  "Occidental Mindoro": "#38bdf8",
+  Marinduque: "#818cf8",
+  Romblon: "#67e8f9",
+  Palawan: "#2dd4bf",
+};
+
+/** Single brand-hue steps for non-semantic series (type / sector). */
+const SERIES_COLORS = [
   "#22d3ee",
-  "#34d399",
-  "#a78bfa",
-  "#fbbf24",
-  "#f472b6",
   "#38bdf8",
-  "#a3e635",
-  "#e879f9",
-  "#fb923c",
+  "#67e8f9",
   "#2dd4bf",
+  "#818cf8",
+  "#94a3b8",
+  "#a5f3fc",
+  "#5eead4",
 ];
+
+const formatValue = (n: number, fmt: ValueFormat = "number") => {
+  if (fmt === "peso") return formatPeso(n);
+  if (fmt === "compact") return formatCompact(n);
+  return String(n);
+};
+
+const tipFromEvent = (
+  e: MouseEvent,
+  payload: Omit<ChartTip, "x" | "y">,
+): ChartTip => ({
+  ...payload,
+  x: e.clientX,
+  y: e.clientY,
+});
+
+const ChartTooltip = ({ tip }: { tip: ChartTip | null }) => {
+  if (!tip) return null;
+  return (
+    <div
+      role="tooltip"
+      className="pointer-events-none fixed z-[1100] max-w-[220px] rounded-lg border border-slate-600 bg-slate-950/95 px-2.5 py-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.45)] backdrop-blur-md"
+      style={{
+        left: tip.x,
+        top: tip.y,
+        transform: "translate(-50%, calc(-100% - 10px))",
+      }}
+    >
+      <div className="flex items-center gap-1.5">
+        <span
+          className="h-2 w-2 shrink-0 rounded-full"
+          style={{ background: tip.color }}
+        />
+        <p className="truncate text-[11px] font-semibold text-white">
+          {tip.label}
+        </p>
+      </div>
+      <p className="mt-0.5 text-xs font-bold tabular-nums text-cyan-200">
+        {tip.value}
+      </p>
+      {tip.detail ? (
+        <p className="mt-0.5 text-[10px] text-slate-400">{tip.detail}</p>
+      ) : null}
+    </div>
+  );
+};
+
+const EmptyChart = ({ label = "No data for current filters." }: { label?: string }) => (
+  <p className="flex h-36 items-center justify-center text-xs text-slate-500">
+    {label}
+  </p>
+);
 
 const Card = ({
   title,
@@ -34,34 +123,62 @@ const Card = ({
 }: {
   title: string;
   subtitle?: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) => (
-  <div className="rounded-2xl border border-slate-800/80 bg-slate-900/70 p-4 backdrop-blur">
+  <div className="rounded-xl border border-slate-700 bg-slate-900/80 p-4 shadow-[0_2px_8px_rgba(0,0,0,0.05)] transition duration-[180ms] hover:-translate-y-0.5 hover:shadow-[0_4px_16px_rgba(0,0,0,0.07)]">
     <div className="mb-3 flex items-baseline justify-between gap-2">
-      <p className="text-sm font-semibold text-white">{title}</p>
+      <h3 className="text-sm font-semibold text-white">{title}</h3>
       {subtitle ? (
-        <span className="text-[11px] text-slate-500">{subtitle}</span>
+        <span className="text-[11px] font-medium text-slate-500">{subtitle}</span>
       ) : null}
     </div>
     {children}
   </div>
 );
 
-/* ── Donut chart ────────────────────────────────────────────────── */
+/* ── Donut ──────────────────────────────────────────────────────── */
 const DonutChart = ({
   rows,
-  format = (n: number) => String(n),
+  format = "number",
+  centerLabel = "TOTAL",
 }: {
   rows: Row[];
-  format?: (n: number) => string;
+  format?: ValueFormat;
+  centerLabel?: string;
 }) => {
+  const [tip, setTip] = useState<ChartTip | null>(null);
+  const [hoverKey, setHoverKey] = useState<string | null>(null);
   const total = rows.reduce((s, r) => s + r.value, 0);
   const r = 42;
   const c = 2 * Math.PI * r;
   let offset = 0;
+
+  if (rows.length === 0 || total === 0) return <EmptyChart />;
+
+  const hovered = hoverKey ? rows.find((row) => row.key === hoverKey) : null;
+
+  const showTip = (e: MouseEvent, row: Row) => {
+    const pct = Math.round((row.value / total) * 100);
+    setHoverKey(row.key);
+    setTip(
+      tipFromEvent(e, {
+        label: row.label,
+        value: formatValue(row.value, format),
+        detail: `${pct}% of total`,
+        color: row.color,
+      }),
+    );
+  };
+
   return (
-    <div className="flex flex-col items-center gap-4 sm:flex-row">
-      <svg viewBox="0 0 120 120" className="h-36 w-36 shrink-0 -rotate-90">
+    <div className="relative flex flex-col items-center gap-4 sm:flex-row">
+      <ChartTooltip tip={tip} />
+      <svg
+        viewBox="0 0 120 120"
+        className="h-36 w-36 shrink-0 -rotate-90"
+        role="img"
+        aria-label={`${centerLabel}: ${formatValue(total, format)}`}
+      >
         <circle
           cx="60"
           cy="60"
@@ -70,21 +187,30 @@ const DonutChart = ({
           stroke="#1e293b"
           strokeWidth="16"
         />
-        {rows.map((row, i) => {
-          const frac = total ? row.value / total : 0;
+        {rows.map((row) => {
+          const frac = row.value / total;
           const dash = frac * c;
+          const isDim = hoverKey !== null && hoverKey !== row.key;
           const seg = (
             <circle
-              key={row.label}
+              key={row.key}
               cx="60"
               cy="60"
               r={r}
               fill="none"
-              stroke={PALETTE[i % PALETTE.length]}
+              stroke={row.color}
               strokeWidth="16"
               strokeDasharray={`${dash} ${c - dash}`}
               strokeDashoffset={-offset}
               strokeLinecap="butt"
+              opacity={isDim ? 0.35 : 1}
+              className="cursor-default transition-opacity duration-[180ms]"
+              onMouseEnter={(e) => showTip(e, row)}
+              onMouseMove={(e) => showTip(e, row)}
+              onMouseLeave={() => {
+                setHoverKey(null);
+                setTip(null);
+              }}
             />
           );
           offset += dash;
@@ -94,45 +220,67 @@ const DonutChart = ({
           x="60"
           y="58"
           textAnchor="middle"
-          fontSize="18"
+          fontSize="16"
           fontWeight="700"
           fill="#e2e8f0"
           transform="rotate(90 60 60)"
         >
-          {format(total)}
+          {hovered
+            ? formatValue(hovered.value, format)
+            : formatValue(total, format)}
         </text>
         <text
           x="60"
           y="74"
           textAnchor="middle"
-          fontSize="8"
+          fontSize="7"
+          fontWeight="600"
+          letterSpacing="0.08em"
           fill="#64748b"
           transform="rotate(90 60 60)"
         >
-          TOTAL
+          {hovered
+            ? hovered.label.length > 12
+              ? `${hovered.label.slice(0, 11)}…`
+              : hovered.label.toUpperCase()
+            : centerLabel}
         </text>
       </svg>
-      <ul className="min-w-0 flex-1 space-y-1.5">
-        {rows.map((row, i) => {
-          const pct = total ? Math.round((row.value / total) * 100) : 0;
+      <ul className="min-w-0 flex-1 space-y-1">
+        {rows.map((row) => {
+          const pct = Math.round((row.value / total) * 100);
+          const active = hoverKey === row.key;
           return (
-            <li
-              key={row.label}
-              className="flex items-center justify-between gap-2 text-xs"
-            >
-              <span className="flex min-w-0 items-center gap-2">
-                <span
-                  className="h-2.5 w-2.5 shrink-0 rounded-full"
-                  style={{ background: PALETTE[i % PALETTE.length] }}
-                />
-                <span className="truncate text-slate-300">{row.label}</span>
-              </span>
-              <span className="shrink-0 text-slate-400">
-                <span className="font-bold text-slate-100">
-                  {format(row.value)}
-                </span>{" "}
-                <span className="text-slate-500">({pct}%)</span>
-              </span>
+            <li key={row.key}>
+              <button
+                type="button"
+                onMouseEnter={(e) => showTip(e, row)}
+                onMouseMove={(e) => showTip(e, row)}
+                onMouseLeave={() => {
+                  setHoverKey(null);
+                  setTip(null);
+                }}
+                className={[
+                  "flex w-full min-h-8 items-center justify-between gap-2 rounded-md px-1.5 py-1 text-left text-xs transition duration-[180ms]",
+                  active
+                    ? "bg-cyan-500/15 text-cyan-100"
+                    : "text-slate-300 hover:bg-slate-800/80",
+                ].join(" ")}
+              >
+                <span className="flex min-w-0 items-center gap-2">
+                  <span
+                    className="h-2.5 w-2.5 shrink-0 rounded-full"
+                    style={{ background: row.color }}
+                  />
+                  <span className="truncate">{row.label}</span>
+                </span>
+                <span className="shrink-0 tabular-nums text-slate-400">
+                  <span className="font-bold text-slate-100">
+                    {formatValue(row.value, format)}
+                  </span>{" "}
+                  <span className="text-slate-500">({pct}%)</span>
+                </span>
+              </button>
             </li>
           );
         })}
@@ -141,50 +289,70 @@ const DonutChart = ({
   );
 };
 
-/* ── Vertical column chart ──────────────────────────────────────── */
+/* ── Vertical columns ───────────────────────────────────────────── */
 const ColumnChart = ({
   rows,
-  format = (n: number) => String(n),
+  format = "number",
 }: {
   rows: Row[];
-  format?: (n: number) => string;
+  format?: ValueFormat;
 }) => {
+  const [tip, setTip] = useState<ChartTip | null>(null);
   const max = Math.max(1, ...rows.map((r) => r.value));
+  const total = rows.reduce((s, r) => s + r.value, 0) || 1;
+
+  if (rows.length === 0) return <EmptyChart />;
+
   return (
-    <div className="flex h-52 items-end gap-2 sm:gap-3">
-      {rows.map((row, i) => {
+    <div className="relative flex h-52 items-end gap-2 sm:gap-3">
+      <ChartTooltip tip={tip} />
+      {rows.map((row) => {
         const pct = Math.round((row.value / max) * 100);
+        const share = Math.round((row.value / total) * 100);
+        const showTip = (e: MouseEvent) =>
+          setTip(
+            tipFromEvent(e, {
+              label: row.label,
+              value: formatValue(row.value, format),
+              detail: `${share}% of series`,
+              color: row.color,
+            }),
+          );
         return (
-          <div
-            key={row.label}
-            className="flex min-w-0 flex-1 flex-col items-center gap-1.5"
+          <button
+            key={row.key}
+            type="button"
+            onMouseEnter={showTip}
+            onMouseMove={showTip}
+            onMouseLeave={() => setTip(null)}
+            className="group flex min-w-0 flex-1 flex-col items-center gap-1.5 rounded-md outline-none transition duration-[180ms] hover:bg-slate-800/40 focus-visible:ring-2 focus-visible:ring-cyan-500/50"
           >
             <span className="text-[11px] font-bold tabular-nums text-slate-200">
-              {format(row.value)}
+              {formatValue(row.value, format)}
             </span>
             <div className="flex h-36 w-full items-end justify-center">
               <div
-                className="w-full max-w-[46px] rounded-t-lg transition-all"
+                className="w-full max-w-[46px] rounded-t-md transition-[height,box-shadow] duration-500 ease-out group-hover:shadow-[0_0_12px_rgba(34,211,238,0.25)]"
                 style={{
-                  height: `${pct}%`,
-                  background: `linear-gradient(to top, ${
-                    PALETTE[i % PALETTE.length]
-                  }33, ${PALETTE[i % PALETTE.length]})`,
+                  height: `${Math.max(pct, row.value > 0 ? 4 : 0)}%`,
+                  background: `linear-gradient(to top, ${row.color}33, ${row.color})`,
                 }}
               />
             </div>
             <span className="line-clamp-2 text-center text-[10px] leading-tight text-slate-400">
               {row.label}
             </span>
-          </div>
+          </button>
         );
       })}
     </div>
   );
 };
 
-/* ── Area / line chart ──────────────────────────────────────────── */
+/* ── Area / line ────────────────────────────────────────────────── */
 const AreaLineChart = ({ rows }: { rows: Row[] }) => {
+  const gradId = useId().replace(/:/g, "");
+  const [tip, setTip] = useState<ChartTip | null>(null);
   const W = 320;
   const H = 150;
   const pad = 26;
@@ -194,19 +362,25 @@ const AreaLineChart = ({ rows }: { rows: Row[] }) => {
     n <= 1 ? W / 2 : pad + (i * (W - 2 * pad)) / (n - 1);
   const y = (v: number) => H - pad - (v / max) * (H - 2 * pad);
   const pts = rows.map((r, i) => [x(i), y(r.value)] as const);
-  const line = pts
-    .map((p, i) => `${i ? "L" : "M"}${p[0]},${p[1]}`)
-    .join(" ");
+  const line = pts.map((p, i) => `${i ? "L" : "M"}${p[0]},${p[1]}`).join(" ");
   const area =
     n > 0 ? `${line} L${x(n - 1)},${H - pad} L${x(0)},${H - pad} Z` : "";
 
+  if (rows.length === 0) return <EmptyChart />;
+
   return (
-    <div>
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full">
+    <div className="relative">
+      <ChartTooltip tip={tip} />
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        className="w-full"
+        role="img"
+        aria-label="Projects per year"
+      >
         <defs>
-          <linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.45" />
-            <stop offset="100%" stopColor="#22d3ee" stopOpacity="0" />
+          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={BRAND} stopOpacity="0.4" />
+            <stop offset="100%" stopColor={BRAND} stopOpacity="0" />
           </linearGradient>
         </defs>
         {[0.25, 0.5, 0.75, 1].map((g) => (
@@ -220,41 +394,73 @@ const AreaLineChart = ({ rows }: { rows: Row[] }) => {
             strokeWidth="1"
           />
         ))}
-        {area ? <path d={area} fill="url(#areaFill)" /> : null}
+        {area ? <path d={area} fill={`url(#${gradId})`} /> : null}
         {line ? (
           <path
             d={line}
             fill="none"
-            stroke="#22d3ee"
+            stroke={BRAND}
             strokeWidth="2.5"
             strokeLinejoin="round"
             strokeLinecap="round"
           />
         ) : null}
-        {pts.map((p, i) => (
-          <g key={rows[i].label}>
-            <circle cx={p[0]} cy={p[1]} r="4" fill="#0f172a" stroke="#22d3ee" strokeWidth="2.5" />
-            <text
-              x={p[0]}
-              y={p[1] - 9}
-              textAnchor="middle"
-              fontSize="9"
-              fontWeight="700"
-              fill="#e2e8f0"
-            >
-              {rows[i].value}
-            </text>
-            <text
-              x={p[0]}
-              y={H - pad + 14}
-              textAnchor="middle"
-              fontSize="9"
-              fill="#64748b"
-            >
-              {rows[i].label}
-            </text>
-          </g>
-        ))}
+        {pts.map((p, i) => {
+          const row = rows[i];
+          const showTip = (e: MouseEvent) =>
+            setTip(
+              tipFromEvent(e, {
+                label: row.label,
+                value: String(row.value),
+                detail: "projects approved",
+                color: BRAND,
+              }),
+            );
+          return (
+            <g key={row.key}>
+              <circle
+                cx={p[0]}
+                cy={p[1]}
+                r="10"
+                fill="transparent"
+                className="cursor-default"
+                onMouseEnter={showTip}
+                onMouseMove={showTip}
+                onMouseLeave={() => setTip(null)}
+              />
+              <circle
+                cx={p[0]}
+                cy={p[1]}
+                r="4"
+                fill="#0f172a"
+                stroke={BRAND}
+                strokeWidth="2.5"
+                pointerEvents="none"
+              />
+              <text
+                x={p[0]}
+                y={p[1] - 9}
+                textAnchor="middle"
+                fontSize="9"
+                fontWeight="700"
+                fill="#e2e8f0"
+                pointerEvents="none"
+              >
+                {row.value}
+              </text>
+              <text
+                x={p[0]}
+                y={H - pad + 14}
+                textAnchor="middle"
+                fontSize="9"
+                fill="#64748b"
+                pointerEvents="none"
+              >
+                {row.label}
+              </text>
+            </g>
+          );
+        })}
       </svg>
     </div>
   );
@@ -263,24 +469,44 @@ const AreaLineChart = ({ rows }: { rows: Row[] }) => {
 /* ── Horizontal bars ────────────────────────────────────────────── */
 const BarChart = ({
   rows,
-  format = (n: number) => String(n),
+  format = "number",
   badges,
 }: {
   rows: Row[];
-  format?: (n: number) => string;
+  format?: ValueFormat;
   badges?: string[];
 }) => {
+  const [tip, setTip] = useState<ChartTip | null>(null);
   const max = Math.max(1, ...rows.map((r) => r.value));
+  const total = rows.reduce((s, r) => s + r.value, 0) || 1;
+
+  if (rows.length === 0) return <EmptyChart />;
+
   return (
-    <div className="space-y-2.5">
-      {rows.length === 0 ? (
-        <p className="text-xs text-slate-500">No data.</p>
-      ) : null}
+    <div className="relative space-y-2">
+      <ChartTooltip tip={tip} />
       {rows.map((row, i) => {
         const pct = Math.round((row.value / max) * 100);
+        const share = Math.round((row.value / total) * 100);
+        const showTip = (e: MouseEvent) =>
+          setTip(
+            tipFromEvent(e, {
+              label: row.label,
+              value: formatValue(row.value, format),
+              detail: `${share}% of series`,
+              color: row.color,
+            }),
+          );
         return (
-          <div key={row.label}>
-            <div className="mb-1 flex items-center justify-between gap-2 text-xs">
+          <button
+            key={row.key}
+            type="button"
+            onMouseEnter={showTip}
+            onMouseMove={showTip}
+            onMouseLeave={() => setTip(null)}
+            className="group w-full rounded-md px-1 py-1 text-left transition duration-[180ms] hover:bg-slate-800/70 focus-visible:ring-2 focus-visible:ring-cyan-500/50"
+          >
+            <div className="mb-1 flex min-h-6 items-center justify-between gap-2 text-xs">
               {badges?.[i] ? (
                 <span
                   className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${badges[i]}`}
@@ -292,22 +518,20 @@ const BarChart = ({
                   {row.label}
                 </span>
               )}
-              <span className="shrink-0 font-bold text-slate-100">
-                {format(row.value)}
+              <span className="shrink-0 font-bold tabular-nums text-slate-100">
+                {formatValue(row.value, format)}
               </span>
             </div>
-            <div className="h-3 overflow-hidden rounded-full bg-slate-800">
+            <div className="h-2.5 overflow-hidden rounded-full bg-slate-800">
               <div
-                className="h-full rounded-full"
+                className="h-full rounded-full transition-[width] duration-500 ease-out"
                 style={{
-                  width: `${pct}%`,
-                  background: `linear-gradient(to right, ${
-                    PALETTE[i % PALETTE.length]
-                  }, ${PALETTE[(i + 3) % PALETTE.length]})`,
+                  width: `${Math.max(pct, row.value > 0 ? 3 : 0)}%`,
+                  background: `linear-gradient(90deg, ${row.color}, ${row.color}cc)`,
                 }}
               />
             </div>
-          </div>
+          </button>
         );
       })}
     </div>
@@ -321,154 +545,221 @@ const ProgramsGraphs = ({
   projects: TaraProject[];
   scope?: string;
 }) => {
-  const summary = useMemo(() => {
-    const totalCost = projects.reduce((s, p) => s + p.budget, 0);
-    const beneficiaries = projects.reduce((s, p) => s + p.beneficiaries, 0);
-    const provinces = new Set(projects.map((p) => p.province)).size;
-    return { count: projects.length, totalCost, beneficiaries, provinces };
-  }, [projects]);
+  const aggregates = useMemo(() => {
+    let totalCost = 0;
+    let beneficiaries = 0;
+    const provinceSet = new Set<Province>();
+    const byYear = new Map<number, number>();
+    const byStatus = new Map<ProjectStatus, number>();
+    const byProvince = new Map<Province, number>();
+    const byType = new Map<string, number>();
+    const bySector = new Map<string, number>();
+    const costByProvince = new Map<Province, number>();
+    const costBySector = new Map<string, number>();
 
-  const perYear = useMemo<Row[]>(() => {
-    const map = new Map<number, number>();
-    projects.forEach((p) => {
+    for (const p of projects) {
+      totalCost += p.budget;
+      beneficiaries += p.beneficiaries;
+      provinceSet.add(p.province);
+
       const y = projectYear(p);
-      map.set(y, (map.get(y) ?? 0) + 1);
-    });
-    return [...map.entries()]
+      byYear.set(y, (byYear.get(y) ?? 0) + 1);
+      byStatus.set(p.status, (byStatus.get(p.status) ?? 0) + 1);
+      byProvince.set(p.province, (byProvince.get(p.province) ?? 0) + 1);
+      costByProvince.set(
+        p.province,
+        (costByProvince.get(p.province) ?? 0) + p.budget,
+      );
+
+      const type = projectType(p);
+      byType.set(type, (byType.get(type) ?? 0) + 1);
+
+      bySector.set(p.sector, (bySector.get(p.sector) ?? 0) + 1);
+      costBySector.set(
+        p.sector,
+        (costBySector.get(p.sector) ?? 0) + p.budget,
+      );
+    }
+
+    const perYear: Row[] = [...byYear.entries()]
       .sort((a, b) => a[0] - b[0])
-      .map(([year, count]) => ({ label: String(year), value: count }));
-  }, [projects]);
+      .map(([year, value]) => ({
+        key: String(year),
+        label: String(year),
+        value,
+        color: BRAND,
+      }));
 
-  const perStatus = useMemo(() => {
-    const rows: Row[] = [];
-    const badges: string[] = [];
-    PROJECT_STATUSES.forEach((status) => {
-      const value = projects.filter((p) => p.status === status).length;
-      if (value > 0) {
-        rows.push({ label: STATUS_META[status].label, value });
-        badges.push(STATUS_META[status].className);
-      }
-    });
-    return { rows, badges };
-  }, [projects]);
+    const perStatusRows: Row[] = [];
+    const perStatusBadges: string[] = [];
+    for (const status of PROJECT_STATUSES) {
+      const value = byStatus.get(status) ?? 0;
+      if (value <= 0) continue;
+      perStatusRows.push({
+        key: status,
+        label: STATUS_META[status].label,
+        value,
+        color: STATUS_COLORS[status],
+      });
+      perStatusBadges.push(STATUS_META[status].className);
+    }
 
-  const perProvince = useMemo<Row[]>(() => {
-    return PROVINCES.map((province) => ({
-      label: province,
-      value: projects.filter((p) => p.province === province).length,
-    }))
-      .filter((r) => r.value > 0)
+    const perProvince: Row[] = PROVINCES.filter((p) => (byProvince.get(p) ?? 0) > 0)
+      .map((province) => ({
+        key: province,
+        label: province,
+        value: byProvince.get(province) ?? 0,
+        color: PROVINCE_COLORS[province],
+      }))
       .sort((a, b) => b.value - a.value);
+
+    const perType: Row[] = TARA_TYPES.filter((t) => (byType.get(t) ?? 0) > 0)
+      .map((type, i) => ({
+        key: type,
+        label: type,
+        value: byType.get(type) ?? 0,
+        color: SERIES_COLORS[i % SERIES_COLORS.length],
+      }))
+      .sort((a, b) => b.value - a.value);
+
+    const perSector: Row[] = SECTORS.filter((s) => (bySector.get(s) ?? 0) > 0)
+      .map((sector, i) => ({
+        key: sector,
+        label: sector,
+        value: bySector.get(sector) ?? 0,
+        color: SERIES_COLORS[i % SERIES_COLORS.length],
+      }))
+      .sort((a, b) => b.value - a.value);
+
+    const costPerProvince: Row[] = PROVINCES.filter(
+      (p) => (costByProvince.get(p) ?? 0) > 0,
+    )
+      .map((province) => ({
+        key: `cost-${province}`,
+        label: province,
+        value: costByProvince.get(province) ?? 0,
+        color: PROVINCE_COLORS[province],
+      }))
+      .sort((a, b) => b.value - a.value);
+
+    const costPerSector: Row[] = SECTORS.filter(
+      (s) => (costBySector.get(s) ?? 0) > 0,
+    )
+      .map((sector, i) => ({
+        key: `cost-${sector}`,
+        label: sector,
+        value: costBySector.get(sector) ?? 0,
+        color: SERIES_COLORS[i % SERIES_COLORS.length],
+      }))
+      .sort((a, b) => b.value - a.value);
+
+    return {
+      summary: {
+        count: projects.length,
+        totalCost,
+        beneficiaries,
+        provinces: provinceSet.size,
+      },
+      perYear,
+      perStatus: { rows: perStatusRows, badges: perStatusBadges },
+      perProvince,
+      perType,
+      perSector,
+      costPerProvince,
+      costPerSector,
+    };
   }, [projects]);
 
-  const perType = useMemo<Row[]>(() => {
-    return TARA_TYPES.map((type) => ({
-      label: type,
-      value: projects.filter((p) => projectType(p) === type).length,
-    }))
-      .filter((r) => r.value > 0)
-      .sort((a, b) => b.value - a.value);
-  }, [projects]);
-
-  const perSector = useMemo<Row[]>(() => {
-    return SECTORS.map((sector) => ({
-      label: sector,
-      value: projects.filter((p) => p.sector === sector).length,
-    }))
-      .filter((r) => r.value > 0)
-      .sort((a, b) => b.value - a.value);
-  }, [projects]);
-
-  const costPerProvince = useMemo<Row[]>(() => {
-    return PROVINCES.map((province) => ({
-      label: province,
-      value: projects
-        .filter((p) => p.province === province)
-        .reduce((s, p) => s + p.budget, 0),
-    }))
-      .filter((r) => r.value > 0)
-      .sort((a, b) => b.value - a.value);
-  }, [projects]);
-
-  const costPerSector = useMemo<Row[]>(() => {
-    return SECTORS.map((sector) => ({
-      label: sector,
-      value: projects
-        .filter((p) => p.sector === sector)
-        .reduce((s, p) => s + p.budget, 0),
-    }))
-      .filter((r) => r.value > 0)
-      .sort((a, b) => b.value - a.value);
-  }, [projects]);
+  const { summary } = aggregates;
 
   const tiles = [
-    { label: "Total Number of Projects", value: String(summary.count) },
-    { label: "Total Project Cost", value: formatPeso(summary.totalCost) },
-    { label: "Total Beneficiaries", value: formatCompact(summary.beneficiaries) },
-    { label: "Provinces Covered", value: String(summary.provinces) },
+    {
+      label: "Total projects",
+      value: String(summary.count),
+      accent: "text-cyan-300",
+    },
+    {
+      label: "Total project cost",
+      value: formatPeso(summary.totalCost),
+      accent: "text-cyan-200",
+    },
+    {
+      label: "Total beneficiaries",
+      value: formatCompact(summary.beneficiaries),
+      accent: "text-emerald-300",
+    },
+    {
+      label: "Provinces covered",
+      value: String(summary.provinces),
+      accent: "text-sky-300",
+    },
   ];
 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
-        {tiles.map((t, i) => (
+        {tiles.map((t) => (
           <div
             key={t.label}
-            className="rounded-2xl border border-slate-800/80 bg-slate-900/70 p-3.5 text-center backdrop-blur"
+            className="rounded-xl border border-slate-700 bg-slate-900/80 p-3.5 text-center shadow-[0_2px_8px_rgba(0,0,0,0.05)]"
           >
             <p
-              className="truncate text-lg font-bold tabular-nums sm:text-xl"
-              style={{ color: PALETTE[i % PALETTE.length] }}
+              className={`truncate text-lg font-bold tabular-nums sm:text-xl ${t.accent}`}
             >
               {t.value}
             </p>
-            <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+            <p className="mt-1 text-[11px] font-medium text-slate-500">
               {t.label}
             </p>
           </div>
         ))}
       </div>
 
-      <p className="text-[11px] text-slate-500">
-        Summary graphs for{" "}
-        <span className="font-semibold text-slate-300">{scope}</span> — computed
-        live from the current project list.
+      <p className="text-[11px] leading-relaxed text-slate-500">
+        Live summary for{" "}
+        <span className="font-semibold text-slate-300">{scope}</span>
+        {" · "}
+        computed from the current project list.
       </p>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card title="Number of Projects Per Year Approved" subtitle="Trend">
-          <AreaLineChart rows={perYear} />
+        <Card title="Projects per year approved" subtitle="Trend">
+          <AreaLineChart rows={aggregates.perYear} />
         </Card>
 
-        <Card
-          title="Number of Projects Per Project Status"
-          subtitle="Share"
-        >
-          <DonutChart rows={perStatus.rows} />
+        <Card title="Projects by status" subtitle="Share">
+          <DonutChart rows={aggregates.perStatus.rows} centerLabel="PROJECTS" />
         </Card>
 
-        <Card title="Number of Projects Per Province" subtitle="Per PSTO">
-          <ColumnChart rows={perProvince} />
+        <Card title="Projects per province" subtitle="Per PSTO">
+          <ColumnChart rows={aggregates.perProvince} />
         </Card>
 
-        <Card title="Project Cost Per Province" subtitle="Share">
-          <DonutChart rows={costPerProvince} format={formatCompact} />
+        <Card title="Project cost per province" subtitle="Share">
+          <DonutChart
+            rows={aggregates.costPerProvince}
+            format="compact"
+            centerLabel="COST"
+          />
         </Card>
 
-        <Card title="Number of Projects Per Project Type" subtitle="Ranked">
-          <BarChart rows={perType} />
+        <Card title="Projects by type" subtitle="Ranked">
+          <BarChart rows={aggregates.perType} />
         </Card>
 
-        <Card title="Number of Projects Per Sector" subtitle="Ranked">
-          <BarChart rows={perSector} />
+        <Card title="Projects by sector" subtitle="Ranked">
+          <BarChart rows={aggregates.perSector} />
         </Card>
 
-        <Card title="Project Cost Per Sector" subtitle="Ranked (₱)">
-          <BarChart rows={costPerSector} format={formatCompact} />
+        <Card title="Project cost by sector" subtitle="Ranked (₱)">
+          <BarChart rows={aggregates.costPerSector} format="compact" />
         </Card>
 
-        <Card title="Status Breakdown" subtitle="Counts">
-          <BarChart rows={perStatus.rows} badges={perStatus.badges} />
+        <Card title="Status counts" subtitle="Labeled">
+          <BarChart
+            rows={aggregates.perStatus.rows}
+            badges={aggregates.perStatus.badges}
+          />
         </Card>
       </div>
     </div>

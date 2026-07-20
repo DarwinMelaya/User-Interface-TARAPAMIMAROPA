@@ -6,6 +6,7 @@ import {
   RegionPrograms,
   PstoDashboard,
   PstoPrograms,
+  RegionEmployeeRecord,
 } from "../pages";
 import Layout from "../layout/Layout";
 
@@ -20,6 +21,7 @@ const Routers = () => {
         <Route path="/regional-director" element={<Layout />}>
           <Route path="dashboard" element={<RegionDashboard />} />
           <Route path="programs" element={<RegionPrograms />} />
+          <Route path="employee-record" element={<RegionEmployeeRecord />} />
         </Route>
         {/* psto */}
         <Route path="/psto" element={<Layout />}>

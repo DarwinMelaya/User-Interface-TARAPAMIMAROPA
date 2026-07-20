@@ -3,8 +3,10 @@ import { Link } from "react-router-dom";
 import {
   HiBanknotes,
   HiChartBar,
-  HiChartPie,
+  HiChevronDown,
+  HiChevronUp,
   HiClipboardDocumentList,
+  HiMagnifyingGlass,
   HiMapPin,
   HiPresentationChartLine,
   HiSquares2X2,
@@ -15,6 +17,7 @@ import ProgramsGraphs from "../../components/graphs/ProgramsGraphs";
 import {
   MOCK_TARA_PROJECTS,
   PROGRAM_META,
+  PROJECT_STATUSES,
   PROVINCES,
   STATUS_META,
   TARA_TYPES,
@@ -39,9 +42,17 @@ const emptyStatusCounts = (): Record<ProjectStatus, number> => ({
   cancelled: 0,
 });
 
+const PAGE_SIZE = 10;
+
 const RegionPrograms = () => {
   const [projects] = useState<TaraProject[]>(MOCK_TARA_PROJECTS);
   const [provinceFilter, setProvinceFilter] = useState<Province | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<ProjectStatus | "all">(
+    "all",
+  );
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [chartsOpen, setChartsOpen] = useState(false);
   const [viewing, setViewing] = useState<TaraProject | null>(null);
   const [graphsOpen, setGraphsOpen] = useState(false);
 
@@ -53,6 +64,20 @@ const RegionPrograms = () => {
     [projects, provinceFilter],
   );
 
+  const filteredProjects = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return scopedProjects.filter((p) => {
+      if (statusFilter !== "all" && p.status !== statusFilter) return false;
+      if (!q) return true;
+      return (
+        p.name.toLowerCase().includes(q) ||
+        p.beneficiary.toLowerCase().includes(q) ||
+        p.municipality.toLowerCase().includes(q) ||
+        projectType(p).toLowerCase().includes(q)
+      );
+    });
+  }, [scopedProjects, statusFilter, search]);
+
   const stats = useMemo(
     () => summarizeProjects(scopedProjects),
     [scopedProjects],
@@ -63,8 +88,6 @@ const RegionPrograms = () => {
     [scopedProjects],
   );
 
-  // Graph 1 — projects per PSTO (province). Always all provinces so the
-  // Director can compare offices at a glance; a bar can be clicked to focus.
   const byProvince = useMemo(() => {
     const rows = PROVINCES.map((province) => {
       const items = projects.filter((p) => p.province === province);
@@ -78,7 +101,6 @@ const RegionPrograms = () => {
     return { rows, max };
   }, [projects]);
 
-  // Graph 2 — projects by status (respects the selected province).
   const byStatus = useMemo(() => {
     const counts = emptyStatusCounts();
     scopedProjects.forEach((p) => {
@@ -91,7 +113,6 @@ const RegionPrograms = () => {
     return { rows, max };
   }, [scopedProjects]);
 
-  // Graph 3 — projects by TYPE (respects the selected province).
   const byType = useMemo(() => {
     const rows = TARA_TYPES.map((type) => {
       const items = scopedProjects.filter((p) => projectType(p) === type);
@@ -105,65 +126,71 @@ const RegionPrograms = () => {
     return { rows, max };
   }, [scopedProjects]);
 
-  const utilizationPct = stats.funding
-    ? Math.round((stats.utilized / stats.funding) * 100)
-    : 0;
+  const pageCount = Math.max(1, Math.ceil(filteredProjects.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount);
+  const pageRows = filteredProjects.slice(
+    (safePage - 1) * PAGE_SIZE,
+    safePage * PAGE_SIZE,
+  );
+
+  const setProvince = (next: Province | "all") => {
+    setProvinceFilter(next);
+    setPage(1);
+  };
+
+  const setStatus = (next: ProjectStatus | "all") => {
+    setStatusFilter(next);
+    setPage(1);
+  };
+
+  const scopeLabel = provinceFilter === "all" ? "MIMAROPA" : provinceFilter;
 
   const kpis = [
-    {
-      label: "Project types",
-      value: String(byType.rows.length),
-      icon: HiClipboardDocumentList,
-    },
     {
       label: "Projects",
       value: String(stats.total),
       icon: HiSquares2X2,
+      hint: `${byType.rows.length} types`,
     },
     {
-      label: "Funding released",
+      label: "Funding",
       value: formatPeso(stats.funding),
       icon: HiBanknotes,
-    },
-    {
-      label: "Utilization",
-      value: `${utilizationPct}%`,
-      icon: HiChartPie,
+      hint: `${formatPeso(totalCost)} total cost`,
     },
     {
       label: "Beneficiaries",
       value: formatCompact(stats.beneficiaries),
       icon: HiUserGroup,
+      hint: `${stats.utilized > 0 ? Math.round((stats.utilized / stats.funding) * 100) : 0}% utilized`,
     },
   ];
-
-  const scopeLabel = provinceFilter === "all" ? "MIMAROPA" : provinceFilter;
 
   return (
     <section className="min-h-screen bg-slate-950 px-4 py-5 pb-[calc(5rem+env(safe-area-inset-bottom))] text-slate-200 sm:px-6 sm:py-7 lg:pb-7">
       <div className="mx-auto max-w-6xl">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
-            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+            <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
               Projects Overview
             </h1>
-            <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-slate-400">
-              All projects per PSTO across MIMAROPA. Select a province to focus
-              the graphs and list below.
+            <p className="mt-1.5 max-w-prose text-sm leading-relaxed text-slate-400">
+              Pick a province, then scan the list. Deep charts stay behind
+              Summary graphs.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => setGraphsOpen(true)}
-              className="inline-flex min-h-[40px] items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition duration-[180ms] hover:bg-blue-500"
+              className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition duration-[180ms] hover:bg-blue-500"
             >
               <HiPresentationChartLine className="h-4 w-4" aria-hidden />
               Summary graphs
             </button>
             <Link
               to="/regional-director/dashboard"
-              className="inline-flex min-h-[40px] items-center gap-2 rounded-lg border border-slate-700 bg-transparent px-4 py-2 text-sm font-medium text-slate-300 transition duration-[180ms] hover:border-slate-600 hover:bg-slate-900 hover:text-white"
+              className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-700 bg-transparent px-4 py-2 text-sm font-medium text-slate-300 transition duration-[180ms] hover:border-slate-600 hover:bg-slate-900 hover:text-white"
             >
               <HiMapPin className="h-4 w-4" aria-hidden />
               Command map
@@ -171,11 +198,12 @@ const RegionPrograms = () => {
           </div>
         </header>
 
+        {/* Province focus */}
         <div className="mt-6 flex items-center gap-2 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <HiMapPin className="h-4 w-4 shrink-0 text-slate-500" aria-hidden />
           <button
             type="button"
-            onClick={() => setProvinceFilter("all")}
+            onClick={() => setProvince("all")}
             className={[
               "shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition duration-[180ms]",
               provinceFilter === "all"
@@ -186,14 +214,12 @@ const RegionPrograms = () => {
             All provinces
           </button>
           {PROVINCES.map((province) => {
-            const count = projects.filter(
-              (p) => p.province === province,
-            ).length;
+            const count = projects.filter((p) => p.province === province).length;
             return (
               <button
                 key={province}
                 type="button"
-                onClick={() => setProvinceFilter(province)}
+                onClick={() => setProvince(province)}
                 className={[
                   "shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition duration-[180ms]",
                   provinceFilter === province
@@ -208,162 +234,193 @@ const RegionPrograms = () => {
           })}
         </div>
 
-        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        {/* 3 hero KPIs only */}
+        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
           {kpis.map((kpi) => {
             const Icon = kpi.icon;
             return (
               <div
                 key={kpi.label}
-                className="rounded-xl border border-slate-800 bg-slate-900/80 p-3.5 shadow-[0_2px_8px_rgba(0,0,0,0.05)]"
+                className="rounded-xl border border-slate-700 bg-slate-900/80 p-4 shadow-[0_2px_8px_rgba(0,0,0,0.05)]"
               >
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-xs font-medium text-slate-500">
                     {kpi.label}
                   </p>
-                  <Icon
-                    className="h-4 w-4 shrink-0 text-slate-500"
-                    aria-hidden
-                  />
+                  <Icon className="h-4 w-4 shrink-0 text-slate-500" aria-hidden />
                 </div>
-                <p className="mt-1.5 truncate text-lg font-semibold tabular-nums text-white sm:text-xl">
+                <p className="mt-1.5 truncate text-xl font-semibold tabular-nums text-white">
                   {kpi.value}
                 </p>
+                <p className="mt-1 text-[11px] text-slate-500">{kpi.hint}</p>
               </div>
             );
           })}
         </div>
 
-        <div className="mt-8">
-          <div className="flex items-center gap-2">
-            <HiChartBar className="h-4 w-4 text-slate-500" aria-hidden />
-            <h2 className="text-sm font-semibold text-white">Graphs</h2>
-          </div>
+        {/* Snapshot charts: collapsed by default */}
+        <div className="mt-6">
+          <button
+            type="button"
+            onClick={() => setChartsOpen((o) => !o)}
+            className="flex w-full min-h-11 items-center justify-between gap-3 rounded-xl border border-slate-700 bg-slate-900/80 px-4 py-3 text-left transition duration-[180ms] hover:border-slate-600 hover:bg-slate-900"
+            aria-expanded={chartsOpen}
+          >
+            <span className="flex items-center gap-2">
+              <HiChartBar className="h-4 w-4 text-slate-500" aria-hidden />
+              <span className="text-sm font-semibold text-white">
+                Quick snapshot
+              </span>
+              <span className="text-xs font-medium text-slate-500">
+                PSTO · status · type
+              </span>
+            </span>
+            {chartsOpen ? (
+              <HiChevronUp className="h-5 w-5 text-slate-400" aria-hidden />
+            ) : (
+              <HiChevronDown className="h-5 w-5 text-slate-400" aria-hidden />
+            )}
+          </button>
 
-          <div className="mt-3 rounded-xl border border-slate-800 bg-slate-900/80 p-4">
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <p className="text-sm font-medium text-white">
-                Projects per PSTO
-              </p>
-              <span className="text-xs text-slate-500">Tap a bar to focus</span>
-            </div>
-            <div className="space-y-2">
-              {byProvince.rows.map((row) => {
-                const active = provinceFilter === row.province;
-                const pct = Math.round((row.count / byProvince.max) * 100);
-                return (
-                  <button
-                    key={row.province}
-                    type="button"
-                    onClick={() =>
-                      setProvinceFilter(active ? "all" : row.province)
-                    }
-                    className={[
-                      "w-full rounded-lg border p-2.5 text-left transition duration-[180ms]",
-                      active
-                        ? "border-blue-500/50 bg-blue-600/10"
-                        : "border-transparent hover:bg-slate-800/50",
-                    ].join(" ")}
-                  >
-                    <div className="mb-1.5 flex items-center justify-between gap-2 text-xs">
-                      <span className="font-medium text-slate-200">
-                        {row.province}
-                      </span>
-                      <span className="shrink-0 text-slate-500">
-                        <span className="font-semibold text-slate-200">
-                          {row.count}
-                        </span>{" "}
-                        · {formatCompact(row.budget)}
-                      </span>
-                    </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-slate-800">
-                      <div
-                        className="h-full rounded-full bg-blue-500 transition-[width] duration-[320ms]"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          {chartsOpen ? (
+            <div className="mt-3 space-y-3">
+              <div className="rounded-xl border border-slate-700 bg-slate-900/80 p-4">
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <p className="text-sm font-medium text-white">
+                    Projects per PSTO
+                  </p>
+                  <span className="text-xs text-slate-500">Tap bar to focus</span>
+                </div>
+                <div className="space-y-2">
+                  {byProvince.rows.map((row) => {
+                    const active = provinceFilter === row.province;
+                    const pct = Math.round((row.count / byProvince.max) * 100);
+                    return (
+                      <button
+                        key={row.province}
+                        type="button"
+                        onClick={() =>
+                          setProvince(active ? "all" : row.province)
+                        }
+                        className={[
+                          "w-full rounded-lg border p-2.5 text-left transition duration-[180ms]",
+                          active
+                            ? "border-blue-500/50 bg-blue-600/10"
+                            : "border-transparent hover:bg-slate-800/50",
+                        ].join(" ")}
+                      >
+                        <div className="mb-1.5 flex items-center justify-between gap-2 text-xs">
+                          <span className="font-medium text-slate-200">
+                            {row.province}
+                          </span>
+                          <span className="shrink-0 text-slate-500">
+                            <span className="font-semibold text-slate-200">
+                              {row.count}
+                            </span>{" "}
+                            · {formatCompact(row.budget)}
+                          </span>
+                        </div>
+                        <div className="h-2 overflow-hidden rounded-full bg-slate-800">
+                          <div
+                            className="h-full rounded-full bg-blue-500 transition-[width] duration-[320ms]"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
-          <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
-            <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-4">
-              <p className="mb-3 text-sm font-medium text-white">
-                By status
-                {provinceFilter === "all" ? "" : ` · ${provinceFilter}`}
-              </p>
-              <div className="space-y-2.5">
-                {byStatus.rows.length === 0 ? (
-                  <p className="text-xs text-slate-500">No projects.</p>
-                ) : null}
-                {byStatus.rows.map((row) => {
-                  const meta = STATUS_META[row.status];
-                  const pct = Math.round((row.count / byStatus.max) * 100);
-                  return (
-                    <div key={row.status}>
-                      <div className="mb-1 flex items-center justify-between text-xs">
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${meta.className}`}
+              <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                <div className="rounded-xl border border-slate-700 bg-slate-900/80 p-4">
+                  <p className="mb-3 text-sm font-medium text-white">
+                    By status
+                    {provinceFilter === "all" ? "" : ` · ${provinceFilter}`}
+                  </p>
+                  <div className="space-y-2.5">
+                    {byStatus.rows.length === 0 ? (
+                      <p className="text-xs text-slate-500">No projects.</p>
+                    ) : null}
+                    {byStatus.rows.map((row) => {
+                      const meta = STATUS_META[row.status];
+                      const pct = Math.round((row.count / byStatus.max) * 100);
+                      return (
+                        <button
+                          key={row.status}
+                          type="button"
+                          onClick={() =>
+                            setStatus(
+                              statusFilter === row.status ? "all" : row.status,
+                            )
+                          }
+                          className="w-full text-left"
                         >
-                          {meta.label}
-                        </span>
-                        <span className="font-semibold text-slate-200">
-                          {row.count}
-                        </span>
-                      </div>
-                      <div className="h-2 overflow-hidden rounded-full bg-slate-800">
-                        <div
-                          className="h-full rounded-full bg-blue-500/80"
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+                          <div className="mb-1 flex items-center justify-between text-xs">
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${meta.className}`}
+                            >
+                              {meta.label}
+                            </span>
+                            <span className="font-semibold text-slate-200">
+                              {row.count}
+                            </span>
+                          </div>
+                          <div className="h-2 overflow-hidden rounded-full bg-slate-800">
+                            <div
+                              className="h-full rounded-full bg-blue-500/80"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
 
-            <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-4">
-              <p className="mb-3 text-sm font-medium text-white">
-                By type
-                {provinceFilter === "all" ? "" : ` · ${provinceFilter}`}
-              </p>
-              <div className="space-y-2.5">
-                {byType.rows.length === 0 ? (
-                  <p className="text-xs text-slate-500">No projects.</p>
-                ) : null}
-                {byType.rows.map((row) => {
-                  const pct = Math.round((row.count / byType.max) * 100);
-                  return (
-                    <div key={row.type}>
-                      <div className="mb-1 flex items-center justify-between gap-2 text-xs">
-                        <span className="min-w-0 truncate font-medium text-slate-300">
-                          {row.type}
-                        </span>
-                        <span className="shrink-0 text-slate-500">
-                          <span className="font-semibold text-slate-200">
-                            {row.count}
-                          </span>{" "}
-                          · {formatCompact(row.budget)}
-                        </span>
-                      </div>
-                      <div className="h-2 overflow-hidden rounded-full bg-slate-800">
-                        <div
-                          className="h-full rounded-full bg-blue-500/80"
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
+                <div className="rounded-xl border border-slate-700 bg-slate-900/80 p-4">
+                  <p className="mb-3 text-sm font-medium text-white">
+                    By type
+                    {provinceFilter === "all" ? "" : ` · ${provinceFilter}`}
+                  </p>
+                  <div className="space-y-2.5">
+                    {byType.rows.length === 0 ? (
+                      <p className="text-xs text-slate-500">No projects.</p>
+                    ) : null}
+                    {byType.rows.map((row) => {
+                      const pct = Math.round((row.count / byType.max) * 100);
+                      return (
+                        <div key={row.type}>
+                          <div className="mb-1 flex items-center justify-between gap-2 text-xs">
+                            <span className="min-w-0 truncate font-medium text-slate-300">
+                              {row.type}
+                            </span>
+                            <span className="shrink-0 text-slate-500">
+                              <span className="font-semibold text-slate-200">
+                                {row.count}
+                              </span>{" "}
+                              · {formatCompact(row.budget)}
+                            </span>
+                          </div>
+                          <div className="h-2 overflow-hidden rounded-full bg-slate-800">
+                            <div
+                              className="h-full rounded-full bg-blue-500/80"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          ) : null}
         </div>
 
+        {/* List: filters + slim table */}
         <div className="mt-8">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <div className="flex items-center gap-2">
                 <HiClipboardDocumentList
@@ -375,66 +432,115 @@ const RegionPrograms = () => {
                 </h2>
               </div>
               <p className="mt-1 text-xs text-slate-500">
-                {scopedProjects.length} records · {formatPeso(totalCost)} total
-                cost
+                {filteredProjects.length} shown
+                {filteredProjects.length !== scopedProjects.length
+                  ? ` of ${scopedProjects.length}`
+                  : ""}{" "}
+                · {formatPeso(totalCost)} total cost
               </p>
             </div>
+
+            <label className="relative block w-full sm:max-w-xs">
+              <span className="sr-only">Search projects</span>
+              <HiMagnifyingGlass
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500"
+                aria-hidden
+              />
+              <input
+                type="search"
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
+                placeholder="Search name, beneficiary…"
+                className="min-h-10 w-full rounded-lg border border-slate-700 bg-slate-900 py-2 pl-9 pr-3 text-sm text-white placeholder:text-slate-600 outline-none transition duration-[180ms] focus:border-blue-500"
+              />
+            </label>
           </div>
 
-          <div className="mt-3 overflow-x-auto rounded-xl border border-slate-800 bg-slate-900/80 [-webkit-overflow-scrolling:touch]">
-            <table className="w-full min-w-[820px] border-collapse text-left text-[13px]">
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            <button
+              type="button"
+              onClick={() => setStatus("all")}
+              className={[
+                "rounded-full px-2.5 py-1 text-[11px] font-medium transition duration-[180ms]",
+                statusFilter === "all"
+                  ? "bg-slate-100 text-slate-900"
+                  : "border border-slate-700 text-slate-400 hover:text-slate-200",
+              ].join(" ")}
+            >
+              All status
+            </button>
+            {PROJECT_STATUSES.map((status) => {
+              const meta = STATUS_META[status];
+              const count = scopedProjects.filter(
+                (p) => p.status === status,
+              ).length;
+              if (count === 0) return null;
+              return (
+                <button
+                  key={status}
+                  type="button"
+                  onClick={() =>
+                    setStatus(statusFilter === status ? "all" : status)
+                  }
+                  className={[
+                    "rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 transition duration-[180ms]",
+                    statusFilter === status
+                      ? meta.className
+                      : "border border-slate-700 text-slate-500 ring-transparent hover:text-slate-300",
+                  ].join(" ")}
+                >
+                  {meta.label}
+                  <span className="ml-1 opacity-70">{count}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-3 overflow-x-auto rounded-xl border border-slate-700 bg-slate-900/80 [-webkit-overflow-scrolling:touch]">
+            <table className="w-full min-w-[640px] border-collapse text-left text-[13px]">
               <thead>
                 <tr className="border-b border-slate-800 text-xs text-slate-500">
-                  <th className="px-3 py-3 font-medium">#</th>
                   <th className="px-3 py-3 font-medium">Project</th>
                   <th className="px-3 py-3 font-medium">Type</th>
-                  <th className="px-3 py-3 font-medium">Year</th>
-                  <th className="px-3 py-3 font-medium">Beneficiary</th>
-                  <th className="px-3 py-3 font-medium">Sector</th>
-                  <th className="px-3 py-3 font-medium">Municipality</th>
+                  <th className="px-3 py-3 font-medium">Place</th>
                   <th className="px-3 py-3 font-medium">Status</th>
-                  <th className="px-3 py-3 text-right font-medium">
-                    Project cost
-                  </th>
+                  <th className="px-3 py-3 text-right font-medium">Cost</th>
                 </tr>
               </thead>
               <tbody>
-                {scopedProjects.length === 0 ? (
+                {pageRows.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={9}
+                      colSpan={5}
                       className="px-4 py-10 text-center text-sm text-slate-500"
                     >
-                      No projects in this province yet.
+                      No projects match these filters.
                     </td>
                   </tr>
                 ) : null}
-                {scopedProjects.map((project, idx) => {
+                {pageRows.map((project) => {
                   const status = STATUS_META[project.status];
                   return (
                     <tr
                       key={project.id}
                       onClick={() => setViewing(project)}
-                      className="cursor-pointer border-b border-slate-800/80 align-top transition duration-[180ms] last:border-b-0 hover:bg-slate-800/40"
+                      className="cursor-pointer border-b border-slate-800/80 transition duration-[180ms] last:border-b-0 hover:bg-slate-800/40"
                     >
-                      <td className="px-3 py-3 text-slate-500">{idx + 1}</td>
-                      <td className="max-w-[360px] px-3 py-3">
-                        <p className="font-medium text-white">{project.name}</p>
-                        <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-slate-500">
-                          {project.description}
+                      <td className="max-w-[280px] px-3 py-3">
+                        <p className="font-medium text-white line-clamp-1">
+                          {project.name}
+                        </p>
+                        <p className="mt-0.5 text-[11px] text-slate-500">
+                          {projectYear(project)}
                         </p>
                       </td>
-                      <td className="max-w-[160px] px-3 py-3 text-slate-400">
-                        {projectType(project)}
-                      </td>
-                      <td className="px-3 py-3 text-slate-400">
-                        {projectYear(project)}
-                      </td>
-                      <td className="max-w-[200px] px-3 py-3 text-slate-400">
-                        {project.beneficiary}
-                      </td>
-                      <td className="max-w-[160px] px-3 py-3 text-slate-400">
-                        {project.sector}
+                      <td className="max-w-[140px] px-3 py-3 text-slate-400">
+                        <span className="line-clamp-1">
+                          {projectType(project)}
+                        </span>
                       </td>
                       <td className="whitespace-nowrap px-3 py-3 text-slate-300">
                         {project.municipality}
@@ -455,6 +561,32 @@ const RegionPrograms = () => {
               </tbody>
             </table>
           </div>
+
+          {filteredProjects.length > PAGE_SIZE ? (
+            <div className="mt-3 flex items-center justify-between gap-3 text-xs text-slate-500">
+              <p>
+                Page {safePage} of {pageCount}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={safePage <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  className="min-h-9 rounded-lg border border-slate-700 px-3 font-medium text-slate-300 transition duration-[180ms] hover:bg-slate-900 disabled:opacity-40"
+                >
+                  Prev
+                </button>
+                <button
+                  type="button"
+                  disabled={safePage >= pageCount}
+                  onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+                  className="min-h-9 rounded-lg border border-slate-700 px-3 font-medium text-slate-300 transition duration-[180ms] hover:bg-slate-900 disabled:opacity-40"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -535,13 +667,13 @@ const RegionPrograms = () => {
               src={viewing.photo_url || projectImage(viewing.id)}
               alt={viewing.name}
               loading="lazy"
-              className="mt-4 h-44 w-full rounded-lg object-cover border border-slate-800"
+              className="mt-4 h-44 w-full rounded-lg border border-slate-800 object-cover"
             />
 
             <p className="mt-4 text-xs font-medium text-slate-500">
               Project description
             </p>
-            <p className="mt-1 text-sm leading-relaxed text-slate-300">
+            <p className="mt-1 max-w-prose text-sm leading-relaxed text-slate-300">
               {describeProject(viewing)}
             </p>
 
