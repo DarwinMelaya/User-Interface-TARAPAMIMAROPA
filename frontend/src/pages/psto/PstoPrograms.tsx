@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   HiArrowDownTray,
   HiArrowTopRightOnSquare,
+  HiArrowUpTray,
   HiMagnifyingGlass,
   HiPaperAirplane,
   HiPrinter,
@@ -14,6 +15,7 @@ import {
   IMPRESSION_TYPES,
   MARINDUQUE_MUNICIPALITIES,
   MARINDUQUE_PROJECTS,
+  MUNICIPALITY_COORDS,
   PROVINCE_NAME,
   REGION_NAME,
   formatPeso,
@@ -46,14 +48,230 @@ const STATUS_CLASS: Record<ImpressionStatus, string> = {
   Withdrawn: "bg-amber-500/15 text-amber-300 ring-amber-400/30",
 };
 
-const YEARS = [
-  ...new Set(MARINDUQUE_PROJECTS.map((p) => p.year)),
-].sort((a, b) => b - a);
-
 const selectClass =
   "w-full rounded-lg border border-slate-700/80 bg-slate-950/60 px-3 py-2 text-sm text-white outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/25";
 
+type ImportFeedback = {
+  kind: "success" | "error";
+  message: string;
+};
+
+/** Split one CSV line; respect quoted fields and `""` escapes. */
+const parseCsvLine = (line: string): string[] => {
+  const out: string[] = [];
+  let cur = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (line[i + 1] === '"') {
+          cur += '"';
+          i += 1;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        cur += ch;
+      }
+    } else if (ch === '"') {
+      inQuotes = true;
+    } else if (ch === ",") {
+      out.push(cur);
+      cur = "";
+    } else {
+      cur += ch;
+    }
+  }
+  out.push(cur);
+  return out;
+};
+
+const normalizeHeader = (h: string) =>
+  h
+    .replace(/^\uFEFF/, "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ");
+
+const HEADER_ALIASES: Record<string, string> = {
+  "#": "index",
+  project: "title",
+  title: "title",
+  description: "description",
+  type: "type",
+  "year approved": "year",
+  year: "year",
+  beneficiary: "beneficiary",
+  sector: "sector",
+  region: "region",
+  province: "province",
+  municipality: "municipality",
+  latitude: "latitude",
+  longitude: "longitude",
+  status: "status",
+  "project cost": "cost",
+  cost: "cost",
+  implementor: "implementor",
+  code: "code",
+  "project code": "code",
+};
+
+const parseCost = (raw: string): number | null => {
+  const cleaned = raw.replace(/php/gi, "").replace(/,/g, "").trim();
+  if (!cleaned) return null;
+  const n = Number(cleaned);
+  return Number.isFinite(n) ? n : null;
+};
+
+const isType = (v: string): v is ImpressionType =>
+  (IMPRESSION_TYPES as string[]).includes(v);
+const isStatus = (v: string): v is ImpressionStatus =>
+  (IMPRESSION_STATUSES as string[]).includes(v);
+const isSector = (v: string): v is ImpressionSector =>
+  (IMPRESSION_SECTORS as string[]).includes(v);
+const isMunicipality = (v: string): v is MarinduqueMunicipality =>
+  (MARINDUQUE_MUNICIPALITIES as string[]).includes(v);
+
+type ParseImportResult = {
+  projects: ImpressionProject[];
+  errors: string[];
+};
+
+const parseProjectsCsv = (text: string): ParseImportResult => {
+  const lines = text
+    .replace(/^\uFEFF/, "")
+    .split(/\r?\n/)
+    .map((l) => l.trimEnd())
+    .filter((l) => l.trim().length > 0);
+
+  if (lines.length < 2) {
+    return {
+      projects: [],
+      errors: ["CSV needs a header row and at least one data row."],
+    };
+  }
+
+  const rawHeaders = parseCsvLine(lines[0]);
+  const keys = rawHeaders.map((h) => {
+    const norm = normalizeHeader(h);
+    return HEADER_ALIASES[norm] ?? HEADER_ALIASES[h.trim().toLowerCase()] ?? "";
+  });
+
+  const required = ["title", "type", "year", "municipality", "status", "cost"];
+  const missing = required.filter((r) => !keys.includes(r));
+  if (missing.length > 0) {
+    return {
+      projects: [],
+      errors: [
+        `Missing required columns: ${missing.join(", ")}. Use Download CSV as template.`,
+      ],
+    };
+  }
+
+  const projects: ImpressionProject[] = [];
+  const errors: string[] = [];
+
+  for (let i = 1; i < lines.length; i++) {
+    const cells = parseCsvLine(lines[i]);
+    const row: Record<string, string> = {};
+    keys.forEach((key, idx) => {
+      if (!key) return;
+      row[key] = (cells[idx] ?? "").trim();
+    });
+
+    const rowLabel = `Row ${i + 1}`;
+    const title = row.title;
+    if (!title) {
+      errors.push(`${rowLabel}: Project title is required.`);
+      continue;
+    }
+
+    const typeVal = row.type;
+    if (!isType(typeVal)) {
+      errors.push(`${rowLabel}: Invalid Type "${typeVal}".`);
+      continue;
+    }
+
+    const yearNum = Number(row.year);
+    if (!Number.isFinite(yearNum) || yearNum < 1990 || yearNum > 2100) {
+      errors.push(`${rowLabel}: Invalid Year "${row.year}".`);
+      continue;
+    }
+
+    const muni = row.municipality;
+    if (!isMunicipality(muni)) {
+      errors.push(`${rowLabel}: Invalid Municipality "${muni}".`);
+      continue;
+    }
+
+    const statusVal = row.status;
+    if (!isStatus(statusVal)) {
+      errors.push(`${rowLabel}: Invalid Status "${statusVal}".`);
+      continue;
+    }
+
+    const cost = parseCost(row.cost ?? "");
+    if (cost === null || cost < 0) {
+      errors.push(`${rowLabel}: Invalid Project Cost "${row.cost}".`);
+      continue;
+    }
+
+    const sectorVal = row.sector || "Other Regional Industry Priorities";
+    if (!isSector(sectorVal)) {
+      errors.push(`${rowLabel}: Invalid Sector "${sectorVal}".`);
+      continue;
+    }
+
+    const coords = MUNICIPALITY_COORDS[muni];
+    const lat = Number(row.latitude);
+    const lng = Number(row.longitude);
+    const latitude = Number.isFinite(lat) ? lat : coords.lat;
+    const longitude = Number.isFinite(lng) ? lng : coords.lng;
+
+    const code =
+      row.code ||
+      `IMP-${yearNum}-${muni.slice(0, 3).toUpperCase()}-${String(i).padStart(3, "0")}`;
+
+    projects.push({
+      code,
+      title,
+      description: row.description || title,
+      type: typeVal,
+      year: yearNum,
+      beneficiary: row.beneficiary || "N/A",
+      sector: sectorVal,
+      municipality: muni,
+      status: statusVal,
+      cost,
+      implementor: row.implementor || IMPLEMENTOR,
+      latitude,
+      longitude,
+    });
+  }
+
+  return { projects, errors };
+};
+
+const mergeImportedProjects = (
+  current: ImpressionProject[],
+  incoming: ImpressionProject[],
+) => {
+  const map = new Map(current.map((p) => [p.code, p]));
+  let added = 0;
+  let updated = 0;
+  for (const p of incoming) {
+    if (map.has(p.code)) updated += 1;
+    else added += 1;
+    map.set(p.code, p);
+  }
+  return { next: [...map.values()], added, updated };
+};
+
 const PstoPrograms = () => {
+  const [projects, setProjects] = useState<ImpressionProject[]>(
+    () => MARINDUQUE_PROJECTS,
+  );
   const [type, setType] = useState<ImpressionType | "all">("all");
   const [status, setStatus] = useState<ImpressionStatus | "all">("all");
   const [year, setYear] = useState<number | "all">("all");
@@ -64,10 +282,20 @@ const PstoPrograms = () => {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [viewing, setViewing] = useState<ImpressionProject | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importFeedback, setImportFeedback] = useState<ImportFeedback | null>(
+    null,
+  );
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const years = useMemo(
+    () => [...new Set(projects.map((p) => p.year))].sort((a, b) => b - a),
+    [projects],
+  );
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return MARINDUQUE_PROJECTS.filter((p) => {
+    return projects.filter((p) => {
       if (type !== "all" && p.type !== type) return false;
       if (status !== "all" && p.status !== status) return false;
       if (year !== "all" && p.year !== year) return false;
@@ -79,10 +307,11 @@ const PstoPrograms = () => {
         p.title.toLowerCase().includes(q) ||
         p.description.toLowerCase().includes(q) ||
         p.beneficiary.toLowerCase().includes(q) ||
-        p.municipality.toLowerCase().includes(q)
+        p.municipality.toLowerCase().includes(q) ||
+        p.code.toLowerCase().includes(q)
       );
     });
-  }, [type, status, year, municipality, sector, search]);
+  }, [projects, type, status, year, municipality, sector, search]);
 
   const totalCost = useMemo(
     () => filtered.reduce((s, p) => s + p.cost, 0),
@@ -118,6 +347,7 @@ const PstoPrograms = () => {
 
   const handleDownload = () => {
     const cols = [
+      "Code",
       "#",
       "Project",
       "Description",
@@ -140,6 +370,7 @@ const PstoPrograms = () => {
     };
     const rows = filtered.map((p, i) =>
       [
+        p.code,
         i + 1,
         p.title,
         p.description,
@@ -173,6 +404,69 @@ const PstoPrograms = () => {
     URL.revokeObjectURL(url);
   };
 
+  const handleImportFile = (file: File) => {
+    if (!file.name.toLowerCase().endsWith(".csv") && file.type !== "text/csv") {
+      setImportFeedback({
+        kind: "error",
+        message: "Please choose a .csv file (same columns as Download).",
+      });
+      return;
+    }
+
+    setImporting(true);
+    setImportFeedback(null);
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const text = String(reader.result ?? "");
+        const { projects: incoming, errors } = parseProjectsCsv(text);
+
+        if (incoming.length === 0) {
+          setImportFeedback({
+            kind: "error",
+            message:
+              errors[0] ??
+              "No valid rows found. Download CSV first and use it as template.",
+          });
+          return;
+        }
+
+        const { next, added, updated } = mergeImportedProjects(
+          projects,
+          incoming,
+        );
+        setProjects(next);
+        resetPage();
+
+        const skipNote =
+          errors.length > 0
+            ? ` ${errors.length} row${errors.length === 1 ? "" : "s"} skipped.`
+            : "";
+        setImportFeedback({
+          kind: "success",
+          message: `Imported ${incoming.length}: ${added} new, ${updated} updated.${skipNote}`,
+        });
+      } catch {
+        setImportFeedback({
+          kind: "error",
+          message: "Could not read that CSV. Check encoding and try again.",
+        });
+      } finally {
+        setImporting(false);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }
+    };
+    reader.onerror = () => {
+      setImporting(false);
+      setImportFeedback({
+        kind: "error",
+        message: "File read failed. Try another CSV.",
+      });
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    };
+    reader.readAsText(file);
+  };
+
   return (
     <section className="min-h-screen bg-gradient-to-b from-slate-950 via-emerald-950/30 to-slate-950 px-4 py-5 sm:px-6 sm:py-7">
       <div className="mx-auto max-w-7xl">
@@ -189,25 +483,67 @@ const PstoPrograms = () => {
               Monitoring of Projects, Services and S&amp;T Interventions
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,text/csv"
+              className="sr-only"
+              aria-label="Import projects CSV"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleImportFile(file);
+              }}
+            />
             <button
               type="button"
               onClick={() => window.print()}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-700/80 bg-slate-900/70 px-4 py-2.5 text-sm font-semibold text-slate-200 transition hover:border-slate-500"
+              className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-700/80 bg-slate-900/70 px-4 py-2.5 text-sm font-semibold text-slate-200 transition duration-[180ms] hover:border-slate-500"
             >
               <HiPrinter className="h-4 w-4" aria-hidden />
               Print
             </button>
             <button
               type="button"
+              disabled={importing}
+              onClick={() => fileInputRef.current?.click()}
+              className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-sky-500/40 bg-sky-500/15 px-4 py-2.5 text-sm font-semibold text-sky-100 transition duration-[180ms] hover:bg-sky-500/25 disabled:opacity-50"
+            >
+              <HiArrowUpTray className="h-4 w-4" aria-hidden />
+              {importing ? "Importing…" : "Import CSV"}
+            </button>
+            <button
+              type="button"
               onClick={handleDownload}
-              className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/15 px-4 py-2.5 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-500/25"
+              className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/15 px-4 py-2.5 text-sm font-semibold text-emerald-100 transition duration-[180ms] hover:bg-emerald-500/25"
             >
               <HiArrowDownTray className="h-4 w-4" aria-hidden />
               Download
             </button>
           </div>
         </header>
+
+        {importFeedback ? (
+          <div
+            role="status"
+            className={[
+              "mt-4 flex items-start justify-between gap-3 rounded-xl border px-3 py-2.5 text-sm",
+              importFeedback.kind === "success"
+                ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-100"
+                : "border-red-500/40 bg-red-500/10 text-red-200",
+            ].join(" ")}
+          >
+            <p className="min-w-0 leading-relaxed">{importFeedback.message}</p>
+            <button
+              type="button"
+              onClick={() => setImportFeedback(null)}
+              className="shrink-0 rounded-lg p-1.5 opacity-70 transition duration-[180ms] hover:opacity-100"
+              aria-label="Dismiss"
+            >
+              <HiXMark className="h-4 w-4" aria-hidden />
+            </button>
+          </div>
+        ) : null}
 
         <div className="mt-5 rounded-2xl border border-slate-800/80 bg-slate-900/70 p-4 backdrop-blur">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -266,7 +602,7 @@ const PstoPrograms = () => {
                 className={selectClass}
               >
                 <option value="all">All</option>
-                {YEARS.map((y) => (
+                {years.map((y) => (
                   <option key={y} value={y}>
                     {y}
                   </option>
