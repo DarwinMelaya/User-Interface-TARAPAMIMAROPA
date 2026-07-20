@@ -221,7 +221,7 @@ const LandingPage = () => {
             </span>
             <div className="leading-tight">
               <p className="text-base font-black tracking-tight text-[#0f172a]">
-                TARAMIMAROPA
+                TARAPAMIMAROPA
               </p>
               <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
                 DOST-MIMAROPA · S&amp;T Project Tracker
@@ -290,7 +290,9 @@ const LandingPage = () => {
             </div>
 
             <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
-              <span className="font-semibold uppercase tracking-wide">Try:</span>
+              <span className="font-semibold uppercase tracking-wide">
+                Try:
+              </span>
               {QUICK_SEARCHES.map((term) => (
                 <button
                   key={term}
@@ -434,7 +436,10 @@ const LandingPage = () => {
                   disabled={locating}
                   className="inline-flex min-h-[36px] items-center gap-1 rounded-[6px] border border-[#c5cdd8] bg-white px-3 py-1.5 text-[12px] font-semibold text-slate-600 transition duration-[180ms] hover:bg-slate-50 disabled:opacity-50"
                 >
-                  <HiMapPin className="h-3.5 w-3.5 text-[#0038a8]" aria-hidden />
+                  <HiMapPin
+                    className="h-3.5 w-3.5 text-[#0038a8]"
+                    aria-hidden
+                  />
                   {locating ? "Locating…" : "Near me"}
                 </button>
               </div>
@@ -461,7 +466,9 @@ const LandingPage = () => {
                     className="inline-flex items-center gap-1.5 text-[11px] text-slate-500"
                   >
                     <span className="h-2 w-2 rounded-full bg-[#0038a8]" />
-                    <span className="font-medium text-slate-700">{program}</span>
+                    <span className="font-medium text-slate-700">
+                      {program}
+                    </span>
                     <span className="text-slate-400">{count}</span>
                   </span>
                 ))}
@@ -572,9 +579,7 @@ const LandingPage = () => {
                           role="button"
                           className={[
                             "cursor-pointer border-b border-[#eef1f5] transition duration-[180ms] last:border-b-0",
-                            active
-                              ? "bg-[#e8eef8]"
-                              : "hover:bg-[#f4f7fb]",
+                            active ? "bg-[#e8eef8]" : "hover:bg-[#f4f7fb]",
                           ].join(" ")}
                         >
                           <td className="max-w-[280px] px-4 py-3">
@@ -625,7 +630,9 @@ const LandingPage = () => {
                         onClick={() => openProject(project)}
                         className={[
                           "flex w-full flex-col gap-1.5 px-3 py-3 text-left transition duration-[180ms]",
-                          active ? "bg-[#e8eef8]" : "bg-white active:bg-slate-50",
+                          active
+                            ? "bg-[#e8eef8]"
+                            : "bg-white active:bg-slate-50",
                         ].join(" ")}
                       >
                         <div className="flex items-start justify-between gap-2">

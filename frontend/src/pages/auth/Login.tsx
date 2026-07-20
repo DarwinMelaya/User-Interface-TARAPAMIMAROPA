@@ -68,7 +68,7 @@ const Login = () => {
             T
           </span>
           <h1 className="mt-4 text-2xl font-black tracking-tight text-[#0038a8]">
-            TARAMIMAROPA
+            TARAPAMIMAROPA
           </h1>
           <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
             DOST-MIMAROPA · Staff sign-in
