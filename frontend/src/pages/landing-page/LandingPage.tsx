@@ -5,7 +5,6 @@ import {
   HiBuildingLibrary,
   HiCheckBadge,
   HiCube,
-  HiGlobeAsiaAustralia,
   HiMagnifyingGlass,
   HiMap,
   HiMapPin,
@@ -164,7 +163,10 @@ const LandingPage = () => {
             Republic of the Philippines · Department of Science and Technology
           </span>
           <span className="inline-flex items-center gap-1.5 text-slate-500">
-            <HiCheckBadge className="h-3.5 w-3.5 text-emerald-400" aria-hidden />
+            <HiCheckBadge
+              className="h-3.5 w-3.5 text-emerald-400"
+              aria-hidden
+            />
             Official MIMAROPA Regional Project Portal
           </span>
         </div>
