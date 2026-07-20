@@ -15,8 +15,6 @@ const ROLES: {
   label: string;
   desc: string;
   Icon: typeof HiShieldCheck;
-  activeClass: string;
-  iconClass: string;
   redirect: string;
 }[] = [
   {
@@ -24,8 +22,6 @@ const ROLES: {
     label: "Regional Director",
     desc: "Region-wide command map",
     Icon: HiShieldCheck,
-    activeClass: "border-blue-400/60 bg-blue-500/15 text-blue-100",
-    iconClass: "from-blue-500 to-indigo-500",
     redirect: "/regional-director/dashboard",
   },
   {
@@ -33,8 +29,6 @@ const ROLES: {
     label: "PSTO",
     desc: "Provincial S&T Office",
     Icon: HiBuildingOffice2,
-    activeClass: "border-emerald-400/60 bg-emerald-500/15 text-emerald-100",
-    iconClass: "from-emerald-500 to-teal-500",
     redirect: "/psto/dashboard",
   },
 ];
@@ -53,35 +47,37 @@ const Login = () => {
   const isRd = role === "regional-director";
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 px-4 py-10 text-slate-100">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f4f6f9] px-4 py-10 text-slate-800">
       <div
-        className={[
-          "pointer-events-none absolute inset-0 transition-colors duration-500",
-          isRd
-            ? "bg-[radial-gradient(circle_at_20%_10%,rgba(37,99,235,0.18),transparent_45%),radial-gradient(circle_at_85%_90%,rgba(34,211,238,0.12),transparent_40%)]"
-            : "bg-[radial-gradient(circle_at_20%_10%,rgba(16,185,129,0.18),transparent_45%),radial-gradient(circle_at_85%_90%,rgba(45,212,191,0.12),transparent_40%)]",
-        ].join(" ")}
+        className="pointer-events-none absolute inset-0 opacity-[0.5]"
+        style={{
+          backgroundImage:
+            "linear-gradient(to right, rgba(0,56,168,0.06) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,56,168,0.06) 1px, transparent 1px)",
+          backgroundSize: "48px 48px",
+          maskImage:
+            "radial-gradient(ellipse 70% 60% at 50% 40%, #000 30%, transparent 100%)",
+          WebkitMaskImage:
+            "radial-gradient(ellipse 70% 60% at 50% 40%, #000 30%, transparent 100%)",
+        }}
       />
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(148,163,184,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.05)_1px,transparent_1px)] bg-[size:44px_44px]" />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#e8eef8] via-transparent to-[#f4f6f9]" />
 
       <div className="relative w-full max-w-md">
         <div className="mb-6 text-center">
-          <div
-            className={`mx-auto inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${active.iconClass} shadow-[0_0_28px_rgba(59,130,246,0.4)] transition`}
-          >
-            <active.Icon className="h-7 w-7 text-white" aria-hidden />
-          </div>
-          <h1 className="mt-4 bg-gradient-to-r from-white via-cyan-100 to-blue-300 bg-clip-text text-2xl font-bold tracking-tight text-transparent">
-            TARA PAMIMAROPA
+          <span className="mx-auto grid h-14 w-14 place-items-center rounded-[10px] bg-[#0038a8] text-xl font-black text-white shadow-[0_2px_8px_rgba(0,56,168,0.18)]">
+            T
+          </span>
+          <h1 className="mt-4 text-2xl font-black tracking-tight text-[#0038a8]">
+            TARAMIMAROPA
           </h1>
-          <p className="mt-1 text-sm text-slate-400">
-            STI Command Center · MIMAROPA
+          <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+            DOST-MIMAROPA · Staff sign-in
           </p>
         </div>
 
         <form
           onSubmit={handleSubmit}
-          className="rounded-2xl border border-slate-800/80 bg-slate-900/70 p-5 shadow-[0_20px_60px_rgba(0,0,0,0.5)] backdrop-blur-xl sm:p-6"
+          className="rounded-[14px] border border-[#c5cdd8] bg-white p-5 shadow-[0_4px_16px_rgba(0,0,0,0.07),0_2px_4px_rgba(0,0,0,0.04)] sm:p-6"
         >
           <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">
             Sign in as
@@ -95,16 +91,16 @@ const Login = () => {
                   type="button"
                   onClick={() => setRole(r.id)}
                   className={[
-                    "flex flex-col items-start gap-1 rounded-xl border p-3 text-left transition",
+                    "flex min-h-[44px] flex-col items-start gap-1 rounded-[10px] border p-3 text-left transition duration-[180ms]",
                     isActive
-                      ? r.activeClass
-                      : "border-slate-700/70 bg-slate-950/40 text-slate-400 hover:border-slate-600",
+                      ? "border-[#0038a8] bg-[#e8eef8] text-[#0038a8] shadow-[0_1px_2px_rgba(0,56,168,0.12)]"
+                      : "border-[#c5cdd8] bg-[#f8fafc] text-slate-600 hover:border-[#0038a8] hover:text-[#0038a8]",
                   ].join(" ")}
                   aria-pressed={isActive}
                 >
                   <r.Icon className="h-5 w-5" aria-hidden />
                   <span className="text-sm font-semibold">{r.label}</span>
-                  <span className="text-[10px] opacity-70">{r.desc}</span>
+                  <span className="text-[10px] text-slate-500">{r.desc}</span>
                 </button>
               );
             })}
@@ -112,32 +108,34 @@ const Login = () => {
 
           <div className="mt-4 space-y-3">
             <label className="block">
-              <span className="mb-1 block text-xs font-semibold text-slate-400">
+              <span className="mb-1 block text-xs font-semibold text-slate-600">
                 Email
               </span>
               <div className="relative">
                 <HiEnvelope
-                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500"
+                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
                   aria-hidden
                 />
                 <input
                   type="email"
                   autoComplete="username"
                   defaultValue={
-                    isRd ? "director@mimaropa.dost.gov.ph" : "psto@mimaropa.dost.gov.ph"
+                    isRd
+                      ? "director@mimaropa.dost.gov.ph"
+                      : "psto@mimaropa.dost.gov.ph"
                   }
                   placeholder="you@dost.gov.ph"
-                  className="w-full rounded-xl border border-slate-700/80 bg-slate-950/60 py-2.5 pl-10 pr-3 text-sm text-white placeholder:text-slate-500 outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/25"
+                  className="w-full rounded-[6px] border border-[#b8c0cc] bg-white py-2.5 pl-10 pr-3 text-sm text-slate-800 placeholder:text-slate-400 outline-none transition duration-[180ms] focus:border-[#0038a8] focus:ring-2 focus:ring-[#0038a8]/20"
                 />
               </div>
             </label>
             <label className="block">
-              <span className="mb-1 block text-xs font-semibold text-slate-400">
+              <span className="mb-1 block text-xs font-semibold text-slate-600">
                 Password
               </span>
               <div className="relative">
                 <HiLockClosed
-                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500"
+                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
                   aria-hidden
                 />
                 <input
@@ -145,7 +143,7 @@ const Login = () => {
                   autoComplete="current-password"
                   defaultValue="demo"
                   placeholder="••••••••"
-                  className="w-full rounded-xl border border-slate-700/80 bg-slate-950/60 py-2.5 pl-10 pr-3 text-sm text-white placeholder:text-slate-500 outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/25"
+                  className="w-full rounded-[6px] border border-[#b8c0cc] bg-white py-2.5 pl-10 pr-3 text-sm text-slate-800 placeholder:text-slate-400 outline-none transition duration-[180ms] focus:border-[#0038a8] focus:ring-2 focus:ring-[#0038a8]/20"
                 />
               </div>
             </label>
@@ -153,28 +151,23 @@ const Login = () => {
 
           <button
             type="submit"
-            className={[
-              "mt-5 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold text-white transition",
-              isRd
-                ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-[0_0_24px_rgba(59,130,246,0.4)]"
-                : "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-[0_0_24px_rgba(16,185,129,0.4)]",
-            ].join(" ")}
+            className="mt-5 flex w-full min-h-[44px] items-center justify-center gap-2 rounded-[6px] border border-[#0038a8] bg-[#0038a8] px-4 py-3 text-sm font-semibold text-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition duration-[180ms] hover:scale-[1.01] hover:bg-[#002d87] hover:shadow-[0_2px_8px_rgba(0,56,168,0.2)]"
           >
             <HiArrowRightOnRectangle className="h-5 w-5" aria-hidden />
             Sign in to {active.label}
           </button>
 
           <p className="mt-3 text-center text-[11px] text-slate-500">
-            Presentation build · credentials are for demo only.
+            Presentation build. Credentials for demo only.
           </p>
         </form>
 
         <div className="mt-5 text-center">
           <Link
             to="/"
-            className="text-xs font-semibold text-slate-400 transition hover:text-white"
+            className="text-xs font-semibold text-slate-500 transition duration-[180ms] hover:text-[#0038a8]"
           >
-            ← Back to landing page
+            Back to landing page
           </Link>
         </div>
       </div>
