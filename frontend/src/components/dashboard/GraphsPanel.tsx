@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState, type MouseEvent } from "react";
 import { HiChartBar, HiChevronDown, HiChevronUp } from "react-icons/hi2";
 import {
   PROGRAM_META,
@@ -10,6 +10,65 @@ import {
   type TaraProgram,
   type TaraProject,
 } from "../../constants/taraProjects";
+
+type ChartTip = {
+  label: string;
+  value: string;
+  detail?: string;
+  color: string;
+  x: number;
+  y: number;
+};
+
+const ChartTooltip = ({ tip }: { tip: ChartTip | null }) => {
+  if (!tip) return null;
+  return (
+    <div
+      role="tooltip"
+      className="pointer-events-none fixed z-[1100] max-w-[220px] rounded-lg border border-slate-600/80 bg-slate-950/95 px-2.5 py-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.45)] backdrop-blur-md"
+      style={{
+        left: tip.x,
+        top: tip.y,
+        transform: "translate(-50%, calc(-100% - 10px))",
+      }}
+    >
+      <div className="flex items-center gap-1.5">
+        <span
+          className="h-2 w-2 shrink-0 rounded-full"
+          style={{ background: tip.color }}
+        />
+        <p className="truncate text-[11px] font-semibold text-white">
+          {tip.label}
+        </p>
+      </div>
+      <p className="mt-0.5 text-[12px] font-bold tabular-nums text-cyan-200">
+        {tip.value}
+      </p>
+      {tip.detail ? (
+        <p className="mt-0.5 text-[10px] text-slate-400">{tip.detail}</p>
+      ) : null}
+    </div>
+  );
+};
+
+const tipFromEvent = (
+  e: MouseEvent,
+  payload: Omit<ChartTip, "x" | "y">,
+): ChartTip => ({
+  ...payload,
+  x: e.clientX,
+  y: e.clientY,
+});
+
+const formatSliceValue = (
+  n: number,
+  valueFormat: "number" | "peso" | "compact" | "percent",
+) => {
+  if (valueFormat === "peso") return formatPeso(n);
+  if (valueFormat === "compact") return formatCompact(n);
+  if (valueFormat === "percent") return `${n}%`;
+  return String(n);
+};
 
 const STATUS_COLORS: Record<ProjectStatus, string> = {
   planning: "#94a3b8",
@@ -78,16 +137,31 @@ const DonutChart = ({
   activeKey?: string | null;
   valueFormat?: "number" | "peso" | "compact";
 }) => {
+  const [tip, setTip] = useState<ChartTip | null>(null);
+  const [hoverKey, setHoverKey] = useState<string | null>(null);
   const total = slices.reduce((sum, s) => sum + s.value, 0) || 1;
   let angle = 0;
-  const formatValue = (n: number) => {
-    if (valueFormat === "peso") return formatPeso(n);
-    if (valueFormat === "compact") return formatCompact(n);
-    return String(n);
+
+  const hovered = hoverKey
+    ? slices.find((s) => s.key === hoverKey)
+    : null;
+
+  const showSliceTip = (e: MouseEvent, slice: Slice) => {
+    const pct = Math.round((slice.value / total) * 100);
+    setHoverKey(slice.key);
+    setTip(
+      tipFromEvent(e, {
+        label: slice.label,
+        value: formatSliceValue(slice.value, valueFormat),
+        detail: `${pct}% of total`,
+        color: slice.color,
+      }),
+    );
   };
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="relative flex items-center gap-3">
+      <ChartTooltip tip={tip} />
       <svg viewBox="0 0 120 120" className="h-28 w-28 shrink-0">
         {slices.map((slice) => {
           const sweep = (slice.value / total) * 360;
@@ -96,21 +170,31 @@ const DonutChart = ({
           angle += sweep;
           if (slice.value <= 0) return null;
           const isActive = activeKey === slice.key;
+          const isHover = hoverKey === slice.key;
           return (
             <path
               key={slice.key}
               d={buildDonutPath(60, 60, 52, start, end)}
               fill={slice.color}
-              opacity={activeKey && !isActive ? 0.35 : 0.92}
-              className={
-                onSliceClick ? "cursor-pointer transition-opacity" : undefined
+              opacity={
+                hoverKey || activeKey
+                  ? isHover || isActive
+                    ? 1
+                    : 0.35
+                  : 0.92
               }
+              className={[
+                "transition-opacity",
+                onSliceClick ? "cursor-pointer" : "cursor-default",
+              ].join(" ")}
               onClick={() => onSliceClick?.(slice.key)}
-            >
-              <title>
-                {slice.label}: {formatValue(slice.value)}
-              </title>
-            </path>
+              onMouseEnter={(e) => showSliceTip(e, slice)}
+              onMouseMove={(e) => showSliceTip(e, slice)}
+              onMouseLeave={() => {
+                setHoverKey(null);
+                setTip(null);
+              }}
+            />
           );
         })}
         <circle cx="60" cy="60" r="30" fill="#020617" />
@@ -119,9 +203,11 @@ const DonutChart = ({
           y="56"
           textAnchor="middle"
           className="fill-cyan-100"
-          style={{ fontSize: 14, fontWeight: 700 }}
+          style={{ fontSize: hovered ? 11 : 14, fontWeight: 700 }}
         >
-          {centerValue}
+          {hovered
+            ? formatSliceValue(hovered.value, valueFormat)
+            : centerValue}
         </text>
         <text
           x="60"
@@ -130,7 +216,11 @@ const DonutChart = ({
           className="fill-slate-400"
           style={{ fontSize: 7, fontWeight: 600, letterSpacing: "0.08em" }}
         >
-          {centerLabel}
+          {hovered
+            ? hovered.label.length > 12
+              ? `${hovered.label.slice(0, 11)}…`
+              : hovered.label
+            : centerLabel}
         </text>
       </svg>
       <ul className="min-w-0 flex-1 space-y-1">
@@ -141,9 +231,15 @@ const DonutChart = ({
               <button
                 type="button"
                 onClick={() => onSliceClick?.(slice.key)}
+                onMouseEnter={(e) => showSliceTip(e, slice)}
+                onMouseMove={(e) => showSliceTip(e, slice)}
+                onMouseLeave={() => {
+                  setHoverKey(null);
+                  setTip(null);
+                }}
                 className={[
                   "flex w-full items-center gap-2 rounded-md px-1 py-0.5 text-left text-[10px] transition",
-                  activeKey === slice.key
+                  activeKey === slice.key || hoverKey === slice.key
                     ? "bg-cyan-500/15 text-cyan-100"
                     : "text-slate-300 hover:bg-slate-800/80",
                 ].join(" ")}
@@ -154,7 +250,7 @@ const DonutChart = ({
                 />
                 <span className="min-w-0 flex-1 truncate">{slice.label}</span>
                 <span className="tabular-nums text-slate-400">
-                  {formatValue(slice.value)}
+                  {formatSliceValue(slice.value, valueFormat)}
                 </span>
               </button>
             </li>
@@ -175,23 +271,38 @@ const BarChart = ({
   activeKey?: string | null;
   valueFormat?: "number" | "peso" | "compact";
 }) => {
+  const [tip, setTip] = useState<ChartTip | null>(null);
   const max = Math.max(...slices.map((s) => s.value), 1);
-  const formatValue = (n: number) => {
-    if (valueFormat === "peso") return formatPeso(n);
-    if (valueFormat === "compact") return formatCompact(n);
-    return String(n);
-  };
+  const total = slices.reduce((s, x) => s + x.value, 0) || 1;
 
   return (
-    <div className="space-y-1.5">
+    <div className="relative space-y-1.5">
+      <ChartTooltip tip={tip} />
       {slices.map((slice) => {
-        const width = Math.max((slice.value / max) * 100, slice.value > 0 ? 4 : 0);
+        const width = Math.max(
+          (slice.value / max) * 100,
+          slice.value > 0 ? 4 : 0,
+        );
         const isActive = activeKey === slice.key;
+        const pct = Math.round((slice.value / total) * 100);
+        const showTip = (e: MouseEvent) => {
+          setTip(
+            tipFromEvent(e, {
+              label: slice.label,
+              value: formatSliceValue(slice.value, valueFormat),
+              detail: `${pct}% of series · max ${formatSliceValue(max, valueFormat)}`,
+              color: slice.color,
+            }),
+          );
+        };
         return (
           <button
             key={slice.key}
             type="button"
             onClick={() => onBarClick?.(slice.key)}
+            onMouseEnter={showTip}
+            onMouseMove={showTip}
+            onMouseLeave={() => setTip(null)}
             className={[
               "group w-full rounded-md px-1 py-0.5 text-left transition",
               isActive ? "bg-cyan-500/10" : "hover:bg-slate-800/70",
@@ -207,7 +318,7 @@ const BarChart = ({
                 {slice.label}
               </span>
               <span className="shrink-0 tabular-nums text-slate-400">
-                {formatValue(slice.value)}
+                {formatSliceValue(slice.value, valueFormat)}
               </span>
             </div>
             <div className="h-1.5 overflow-hidden rounded-full bg-slate-800">
@@ -240,13 +351,9 @@ const ColumnChart = ({
   activeKey?: string | null;
   height?: number;
 }) => {
+  const [tip, setTip] = useState<ChartTip | null>(null);
   const max = Math.max(...slices.map((s) => s.value), 1);
-  const formatValue = (n: number) => {
-    if (valueFormat === "peso") return formatPeso(n);
-    if (valueFormat === "compact") return formatCompact(n);
-    if (valueFormat === "percent") return `${n}%`;
-    return String(n);
-  };
+  const total = slices.reduce((s, x) => s + x.value, 0) || 1;
   const gap = 8;
   const barW = Math.max(
     12,
@@ -254,7 +361,8 @@ const ColumnChart = ({
   );
 
   return (
-    <div>
+    <div className="relative">
+      <ChartTooltip tip={tip} />
       <svg
         viewBox={`0 0 200 ${height + 28}`}
         className="h-auto w-full"
@@ -275,12 +383,41 @@ const ColumnChart = ({
           );
         })}
         {slices.map((slice, index) => {
-          const h = Math.max((slice.value / max) * (height - 8), slice.value > 0 ? 3 : 0);
+          const h = Math.max(
+            (slice.value / max) * (height - 8),
+            slice.value > 0 ? 3 : 0,
+          );
           const x = index * (barW + gap) + 10;
           const y = height - h + 4;
           const isActive = activeKey === slice.key;
+          const pct = Math.round((slice.value / total) * 100);
+          const showTip = (e: MouseEvent) => {
+            setTip(
+              tipFromEvent(e, {
+                label: slice.label,
+                value: formatSliceValue(slice.value, valueFormat),
+                detail:
+                  valueFormat === "percent"
+                    ? "Avg progress"
+                    : `${pct}% of series`,
+                color: slice.color,
+              }),
+            );
+          };
           return (
             <g key={slice.key}>
+              <rect
+                x={x}
+                y={4}
+                width={barW}
+                height={height}
+                fill="transparent"
+                className={onBarClick ? "cursor-pointer" : "cursor-default"}
+                onClick={() => onBarClick?.(slice.key)}
+                onMouseEnter={showTip}
+                onMouseMove={showTip}
+                onMouseLeave={() => setTip(null)}
+              />
               <rect
                 x={x}
                 y={y}
@@ -289,13 +426,8 @@ const ColumnChart = ({
                 rx="3"
                 fill={slice.color}
                 opacity={activeKey && !isActive ? 0.35 : 0.92}
-                className={onBarClick ? "cursor-pointer" : undefined}
-                onClick={() => onBarClick?.(slice.key)}
-              >
-                <title>
-                  {slice.label}: {formatValue(slice.value)}
-                </title>
-              </rect>
+                className="pointer-events-none"
+              />
               <text
                 x={x + barW / 2}
                 y={height + 16}
@@ -313,8 +445,12 @@ const ColumnChart = ({
       </svg>
       <div className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5">
         {slices.map((slice) => (
-          <span key={slice.key} className="text-[9px] tabular-nums text-slate-500">
-            <span style={{ color: slice.color }}>●</span> {formatValue(slice.value)}
+          <span
+            key={slice.key}
+            className="text-[9px] tabular-nums text-slate-500"
+          >
+            <span style={{ color: slice.color }}>●</span>{" "}
+            {formatSliceValue(slice.value, valueFormat)}
           </span>
         ))}
       </div>
@@ -329,6 +465,8 @@ const AreaSpark = ({
   points: { label: string; value: number }[];
   color?: string;
 }) => {
+  const [tip, setTip] = useState<ChartTip | null>(null);
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
   const w = 200;
   const h = 72;
   const max = Math.max(...points.map((p) => p.value), 1);
@@ -338,37 +476,71 @@ const AreaSpark = ({
     const y = h - 10 - (p.value / max) * (h - 22);
     return { x, y, ...p };
   });
-  const line = coords.map((c, i) => `${i === 0 ? "M" : "L"} ${c.x} ${c.y}`).join(" ");
+  const line = coords
+    .map((c, i) => `${i === 0 ? "M" : "L"} ${c.x} ${c.y}`)
+    .join(" ");
   const area = `${line} L ${coords[coords.length - 1]?.x ?? 0} ${h} L 0 ${h} Z`;
 
   return (
-    <svg viewBox={`0 0 ${w} ${h + 16}`} className="h-auto w-full">
-      <defs>
-        <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.45" />
-          <stop offset="100%" stopColor={color} stopOpacity="0.02" />
-        </linearGradient>
-      </defs>
-      <path d={area} fill="url(#sparkFill)" />
-      <path d={line} fill="none" stroke={color} strokeWidth="2" />
-      {coords.map((c) => (
-        <g key={c.label}>
-          <circle cx={c.x} cy={c.y} r="2.5" fill={color} />
-          <text
-            x={c.x}
-            y={h + 12}
-            textAnchor="middle"
-            className="fill-slate-500"
-            style={{ fontSize: 7 }}
-          >
-            {c.label}
-          </text>
-          <title>
-            {c.label}: {c.value}
-          </title>
-        </g>
-      ))}
-    </svg>
+    <div className="relative">
+      <ChartTooltip tip={tip} />
+      <svg viewBox={`0 0 ${w} ${h + 16}`} className="h-auto w-full">
+        <defs>
+          <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.45" />
+            <stop offset="100%" stopColor={color} stopOpacity="0.02" />
+          </linearGradient>
+        </defs>
+        <path d={area} fill="url(#sparkFill)" />
+        <path d={line} fill="none" stroke={color} strokeWidth="2" />
+        {coords.map((c, i) => {
+          const showTip = (e: MouseEvent) => {
+            setHoverIdx(i);
+            setTip(
+              tipFromEvent(e, {
+                label: `Year ${c.label}`,
+                value: `${c.value} projects`,
+                detail: "End-year pipeline",
+                color,
+              }),
+            );
+          };
+          return (
+            <g key={c.label}>
+              <circle
+                cx={c.x}
+                cy={c.y}
+                r={hoverIdx === i ? 4.5 : 2.5}
+                fill={color}
+                className="pointer-events-none"
+              />
+              <circle
+                cx={c.x}
+                cy={c.y}
+                r="12"
+                fill="transparent"
+                className="cursor-pointer"
+                onMouseEnter={showTip}
+                onMouseMove={showTip}
+                onMouseLeave={() => {
+                  setHoverIdx(null);
+                  setTip(null);
+                }}
+              />
+              <text
+                x={c.x}
+                y={h + 12}
+                textAnchor="middle"
+                className="fill-slate-500"
+                style={{ fontSize: 7 }}
+              >
+                {c.label}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
   );
 };
 
@@ -383,46 +555,65 @@ const DualMetric = ({
     color: string;
   }[];
 }) => {
+  const [tip, setTip] = useState<ChartTip | null>(null);
   const max = Math.max(...rows.flatMap((r) => [r.left, r.right]), 1);
   return (
-    <div className="space-y-2">
+    <div className="relative space-y-2">
+      <ChartTooltip tip={tip} />
       <div className="flex items-center justify-between text-[9px] font-semibold uppercase tracking-wide text-slate-500">
         <span>Budget</span>
         <span>Beneficiaries</span>
       </div>
-      {rows.map((row) => (
-        <div key={row.key}>
-          <p className="mb-0.5 truncate text-[10px] font-semibold text-slate-300">
-            {row.label}
-          </p>
-          <div className="grid grid-cols-2 gap-1.5">
-            <div className="h-1.5 overflow-hidden rounded-full bg-slate-800">
-              <div
-                className="h-full rounded-full"
-                style={{
-                  width: `${(row.left / max) * 100}%`,
-                  background: row.color,
-                }}
-                title={formatPeso(row.left)}
-              />
+      {rows.map((row) => {
+        const showTip = (e: MouseEvent) => {
+          setTip(
+            tipFromEvent(e, {
+              label: row.label,
+              value: formatPeso(row.left),
+              detail: `${formatCompact(row.right)} beneficiaries`,
+              color: row.color,
+            }),
+          );
+        };
+        return (
+          <div
+            key={row.key}
+            className="rounded-md px-1 py-0.5 transition hover:bg-slate-800/60"
+            onMouseEnter={showTip}
+            onMouseMove={showTip}
+            onMouseLeave={() => setTip(null)}
+          >
+            <p className="mb-0.5 truncate text-[10px] font-semibold text-slate-300">
+              {row.label}
+            </p>
+            <div className="grid grid-cols-2 gap-1.5">
+              <div className="h-1.5 overflow-hidden rounded-full bg-slate-800">
+                <div
+                  className="h-full rounded-full"
+                  style={{
+                    width: `${(row.left / max) * 100}%`,
+                    background: row.color,
+                  }}
+                />
+              </div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-slate-800">
+                <div
+                  className="h-full rounded-full bg-violet-400"
+                  style={{ width: `${(row.right / max) * 100}%` }}
+                />
+              </div>
             </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-slate-800">
-              <div
-                className="h-full rounded-full bg-violet-400"
-                style={{ width: `${(row.right / max) * 100}%` }}
-                title={formatCompact(row.right)}
-              />
+            <div className="mt-0.5 flex justify-between text-[9px] tabular-nums text-slate-500">
+              <span>{formatPeso(row.left)}</span>
+              <span>{formatCompact(row.right)}</span>
             </div>
           </div>
-          <div className="mt-0.5 flex justify-between text-[9px] tabular-nums text-slate-500">
-            <span>{formatPeso(row.left)}</span>
-            <span>{formatCompact(row.right)}</span>
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };
+
 
 export type GraphsPanelProps = {
   projects: TaraProject[];
@@ -826,7 +1017,10 @@ const GraphsPanel = ({
                 )}
               </section>
 
-              <section className="rounded-xl border border-slate-700/70 bg-slate-950/55 p-3">
+              <section
+                className="rounded-xl border border-slate-700/70 bg-slate-950/55 p-3"
+                title={`Utilization ${utilPct}% · Used ${formatPeso(chartData.utilized)} of ${formatPeso(chartData.funding)}`}
+              >
                 <div className="flex items-end justify-between gap-2">
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">

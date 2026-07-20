@@ -1,0 +1,101 @@
+---
+alwaysApply: true
+---
+
+# Clear Visual Hierarchy
+
+The most important element on a screen must draw the eye first. Hierarchy is intentional, never accidental.
+
+## 1. Typography scales
+
+Use only **3–4 font sizes** per screen. Distinguish levels with weight and color, not size alone.
+
+```tsx
+// ❌ BAD — five sizes, hierarchy only by px
+<p className="text-3xl">Title</p>
+<p className="text-2xl">Subtitle</p>
+<p className="text-xl">Section</p>
+<p className="text-lg">Body</p>
+<p className="text-sm">Note</p>
+
+// ✅ GOOD — three sizes; weight carries rank
+<h1 className="text-2xl font-semibold text-foreground">Title</h1>
+<p className="text-base font-normal text-foreground">Body copy…</p>
+<span className="text-sm font-medium text-muted-foreground">Meta</span>
+```
+
+## 2. Primary actions
+
+Exactly **one** prominent primary button per screen (or per focused modal). Secondary actions use outline, phantom, or ghost styles.
+
+```tsx
+// ❌ BAD — two solid CTAs compete
+<button className="bg-brand text-white">Save</button>
+<button className="bg-brand text-white">Cancel</button>
+
+// ✅ GOOD — one solid primary; secondary is quiet
+<button className="bg-brand text-white">Save</button>
+<button className="border border-border bg-transparent">Cancel</button>
+```
+
+## 3. Proximity
+
+Related elements sit closer together than unrelated ones. Whitespace encodes grouping.
+
+```tsx
+// ❌ BAD — equal gap everywhere; no groups
+<div className="flex flex-col gap-4">
+  <label>Email</label>
+  <input />
+  <label>Password</label>  {/* looks as far from Email as from Submit */}
+  <button>Submit</button>
+</div>
+
+// ✅ GOOD — tight within fields; larger gap between groups
+<div className="flex flex-col gap-6">
+  <div className="flex flex-col gap-1.5">
+    <label>Email</label>
+    <input />
+  </div>
+  <div className="flex flex-col gap-1.5">
+    <label>Password</label>
+    <input />
+  </div>
+  <button>Submit</button>
+</div>
+```
+
+## 4. Readability
+
+- Cap body line length at **60–75 characters** (`max-w-prose` / `max-w-2xl`).
+- Body text: minimum **150% line height** (`leading-relaxed` or `leading-[1.5]`).
+
+```tsx
+// ❌ BAD
+<p className="max-w-full leading-none">Long unbroken paragraph…</p>
+
+// ✅ GOOD
+<p className="max-w-prose text-base leading-relaxed">Long paragraph…</p>
+```
+
+## 5. Contrast
+
+Important text must meet a high contrast ratio against its background. Dim non-essential metadata.
+
+```tsx
+// ❌ BAD — primary copy muted; meta as loud as the title
+<h1 className="text-muted-foreground">Report title</h1>
+<span className="text-foreground">Updated 2h ago</span>
+
+// ✅ GOOD — content loud; meta quiet
+<h1 className="text-foreground font-semibold">Report title</h1>
+<span className="text-sm text-muted-foreground">Updated 2h ago</span>
+```
+
+## Checklist before shipping UI
+
+- [ ] Eye lands on the primary message or action within 1 second
+- [ ] ≤4 type sizes; weight/color reinforce rank
+- [ ] One solid primary CTA; others are secondary styles
+- [ ] Related items cluster; unrelated groups have more space
+- [ ] Body ≤75ch, ≥1.5 line-height; meta is visually quieter
